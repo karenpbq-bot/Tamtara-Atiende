@@ -51,25 +51,26 @@ export function AdminClientes() {
     setNuevoCliente({ ...nuevoCliente, codigo_invitacion_5d: codigo });
   };
 
-  const handleCrearCliente = async (e) => {
+  const handleCrearUsuarioCliente = async (e) => {
     e.preventDefault();
-    const { error } = await supabase.from('uni_clientes').insert([nuevoCliente]);
-    if (error) {
-      alert('Error al registrar cliente: ' + error.message);
+    if (!clienteSeleccionado) return;
+
+    // Inserción directa en la tabla uni_usuarios sin pasar por Supabase Auth (Opción 2)
+    const { error: dbError } = await supabase.from('uni_usuarios').insert([{
+      correo: nuevoUsuario.correo,
+      nombres_apellidos: nuevoUsuario.nombres_apellidos,
+      rol: nuevoUsuario.rol,
+      codigo_7d: clienteSeleccionado.codigo_invitacion_5d,
+      estado: true,
+      password_hash: nuevoUsuario.password // Aquí guardamos la contraseña para tu validación personalizada
+    }]);
+
+    if (dbError) {
+      alert('Error al registrar usuario: ' + dbError.message);
     } else {
-      alert('¡Cliente y código de acceso de 5 dígitos creados con éxito!');
-      setNuevoCliente({
-        nombre_empresa: '',
-        nombre_marca: '',
-        tipo_especialidad: 'Restaurante / Cafetería',
-        codigo_invitacion_5d: '',
-        tipo_plan: 'Mensual',
-        costo_plan: '',
-        vigencia_plan: '',
-        estado: true,
-        estado_suscripcion: true
-      });
-      fetchClientes();
+      alert(`¡Usuario ${nuevoUsuario.rol} creado con éxito para ${clienteSeleccionado.nombre_marca}!`);
+      setNuevoUsuario({ correo: '', password: '', nombres_apellidos: '', rol: 'admin' });
+      abrirGestionUsuarios(clienteSeleccionado); // Recargar la lista del modal
     }
   };
 
