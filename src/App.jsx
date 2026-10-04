@@ -24,27 +24,39 @@ export default function App() {
 
   const manejarLogin = async (email, password) => {
     try {
-      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-        email: email,
-        password: password,
-      });
-
-      if (authError) throw authError;
-
+      // 1. Buscar directamente el usuario en tu tabla unificada 'uni_usuarios'
       const { data: perfilData, error: perfilError } = await supabase
         .from('uni_usuarios')
-        .select('rol, nombres_apellidos, codigo_7d, estado')
+        .select('*')
         .eq('correo', email)
         .single();
 
-      if (perfilError) throw perfilError;
+      if (perfilError || !perfilData) {
+        throw new Error("Usuario no registrado en la base de datos.");
+      }
 
+      // 2. Validar si la cuenta está activa
       if (perfilData.estado === false) {
         alert("Esta cuenta está desactivada.");
-        await supabase.auth.signOut();
         return;
       }
 
+      // 3. Validar la contraseña (si es superadmin manejado por Supabase o contraseña normal en base de datos)
+      if (perfilData.rol !== 'superadmin') {
+        if (perfilData.password_hash !== password) {
+          alert("Contraseña incorrecta.");
+          return;
+        }
+      } else {
+        // Si es superadmin, validamos con Supabase Auth por seguridad maestra
+        const { error: authError } = await supabase.auth.signInWithPassword({
+          email: email,
+          password: password,
+        });
+        if (authError) throw authError;
+      }
+
+      // 4. Guardar la sesión localmente
       const datosCompletos = {
         correo: email,
         rol: perfilData.rol, 
