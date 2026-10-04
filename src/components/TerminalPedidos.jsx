@@ -4,23 +4,23 @@ import { supabase } from '../supabase';
 export default function TerminalPedidos({ idCliente }) {
   const [productos, setProductos] = useState([]);
   const [cliente, setCliente] = useState('');
-  const [tipoEntrega, setTipoEntrega] = useState('Mesa / Salón');
+  const [tipoEntrega, setTipoEntrega] = useState('Mesa');
   const [destino, setDestino] = useState('');
   const [telefono, setTelefono] = useState('');
   const [carrito, setCarrito] = useState([]);
-  const [pasoPedido, setPasoPedido] = useState(1); // 1: Catálogo, 2: Cierre de Caja
-  
-  // Estado para el buscador por palabra clave
+  const [pasoPedido, setPasoPedido] = useState(1);
   const [filtroBusqueda, setFiltroBusqueda] = useState('');
 
-  // Estados para el formulario de pago (Paso 2)
+  // Estados de control para desplegar adicionales por producto de forma independiente
+  const [mostrarAdGratis, setMostrarAdGratis] = useState({});
+  const [mostrarAdPorcion, setMostrarAdPorcion] = useState({});
+  const [adicionalesTemp, setAdicionalesTemp] = useState({});
+
+  // Estados de pago (Paso 2)
   const [esCortesia, setEsCortesia] = useState(false);
   const [metodoPago, setMetodoPago] = useState('Efectivo');
   const [numOperacion, setNumOperacion] = useState('');
   const [montoRecibido, setMontoRecibido] = useState('');
-
-  // Estados auxiliares para adicionales por producto
-  const [adicionalesTemp, setAdicionalesTemp] = useState({});
 
   useEffect(() => {
     if (idCliente) cargarProductos();
@@ -34,15 +34,14 @@ export default function TerminalPedidos({ idCliente }) {
     if (data) setProductos(data);
   };
 
-  const manejarAdicionalChange = (prodId, comp, tipo, precio) => {
-    const key = `${prodId}-${comp}`;
+  const manejarAdicionalChange = (prodId, comp, precio) => {
     setAdicionalesTemp(prev => {
       const current = prev[prodId] || [];
       const exists = current.some(item => item.nombre === comp);
       if (exists) {
         return { ...prev, [prodId]: current.filter(item => item.nombre !== comp) };
       } else {
-        return { ...prev, [prodId]: [...current, { nombre: comp, tipo, precio: Number(precio) }] };
+        return { ...prev, [prodId]: [...current, { nombre: comp, precio: Number(precio) }] };
       }
     });
   };
@@ -85,10 +84,13 @@ export default function TerminalPedidos({ idCliente }) {
     const vueltoCalc = metodoPago === 'Efectivo' && !esCortesia ? Math.max(0, montoRec - totalCalculado) : 0.0;
     const codigoTicket = `PED-${Math.floor(100 + Math.random() * 900)}`;
 
+    // Normalización estricta del tipo de entrega para cumplir con la constraint de la BD
+    const tipoEntregaNormalizado = tipoEntrega.includes('Delivery') ? 'Delivery' : 'Mesa';
+
     const payload = {
       id_cliente: idCliente,
       cliente: cliente.trim().toUpperCase(),
-      tipo_entrega: tipoEntrega,
+      tipo_entrega: tipoEntregaNormalizado,
       destino_entrega: destino.trim().toUpperCase(),
       telefono_contacto: telefono,
       items: carrito,
@@ -106,7 +108,7 @@ export default function TerminalPedidos({ idCliente }) {
 
     const { error } = await supabase.from('pedidos').insert([payload]);
     if (!error) {
-      alert(estadoPago === 'Pagado' ? '🎉 ¡Pedido registrado, cobrado y enviado a cocina con éxito!' : '🚀 Pedido enviado a cocina con cuenta pendiente.');
+      alert(estadoPago === 'Pagado' ? '🎉 ¡Pedido registrado y cobrado con éxito!' : '🚀 Pedido enviado a cocina con cuenta pendiente.');
       setCarrito([]);
       setCliente('');
       setDestino('');
@@ -120,12 +122,10 @@ export default function TerminalPedidos({ idCliente }) {
     }
   };
 
-  // Filtrado por buscador y categorías
   const productosFiltrados = productos.filter(p => 
     p.vigente !== false && 
     (p.nombre.toLowerCase().includes(filtroBusqueda.toLowerCase()) || 
-     (p.codigo_corto && p.codigo_corto.toLowerCase().includes(filtroBusqueda.toLowerCase())) ||
-     (p.descripcion && p.descripcion.toLowerCase().includes(filtroBusqueda.toLowerCase())))
+     (p.codigo_corto && p.codigo_corto.toLowerCase().includes(filtroBusqueda.toLowerCase())))
   );
 
   const principales = productosFiltrados.filter(p => ['Principal', 'Hamburguesas'].includes(p.categoria));
@@ -135,15 +135,11 @@ export default function TerminalPedidos({ idCliente }) {
 
   return (
     <div style={{ padding: '24px', fontFamily: "'Segoe UI', sans-serif", backgroundColor: '#f8fafc', minHeight: '100vh' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-        <div>
-          <h2 style={{ margin: 0, fontSize: '1.5rem', color: '#1e293b', fontWeight: 'bold' }}>🛒 Terminal de Pedidos</h2>
-          <p style={{ margin: '4px 0 0 0', fontSize: '0.85rem', color: '#64748b' }}>Caja rápida, selección de adicionales y control de cobros.</p>
-        </div>
-      </div>
+      <h2 style={{ margin: '0 0 4px 0', fontSize: '1.5rem', color: '#1e293b', fontWeight: 'bold' }}>🛒 Terminal de Pedidos</h2>
+      <p style={{ margin: '0 0 20px 0', fontSize: '0.85rem', color: '#64748b' }}>Caja rápida, selección de adicionales y control de cobros.</p>
       
       {/* IDENTIFICACIÓN Y BUSCADOR */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 1fr 1.5fr', gap: '15px', marginBottom: '20px', background: '#ffffff', padding: '18px', borderRadius: '12px', boxShadow: '0 2px 4px rgba(0,0,0,0.02)', border: '1px solid #e2e8f0' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 1fr 1.5fr', gap: '15px', marginBottom: '20px', background: '#ffffff', padding: '18px', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
         <div>
           <label style={labelSt}>👤 Nombre del Cliente:</label>
           <input type="text" placeholder="Ej: Juan Pérez" value={cliente} onChange={e => setCliente(e.target.value)} style={inputSt} />
@@ -151,81 +147,93 @@ export default function TerminalPedidos({ idCliente }) {
         <div>
           <label style={labelSt}>📦 Tipo de Entrega:</label>
           <select value={tipoEntrega} onChange={e => setTipoEntrega(e.target.value)} style={inputSt}>
-            <option value="Mesa / Salón">Mesa / Salón</option>
-            <option value="Delivery / Llevar">Delivery / Llevar</option>
+            <option value="Mesa">Mesa / Salón</option>
+            <option value="Delivery">Delivery / Llevar</option>
           </select>
         </div>
         <div>
-          <label style={labelSt}>{tipoEntrega === 'Mesa / Salón' ? 'N° Mesa' : 'Dirección'}:</label>
-          <input type="text" placeholder={tipoEntrega === 'Mesa / Salón' ? 'Ej: Mesa 4' : 'Ej: Av. Principal 123'} value={destino} onChange={e => setDestino(e.target.value)} style={inputSt} />
+          <label style={labelSt}>{tipoEntrega === 'Mesa' ? 'N° Mesa' : 'Dirección'}:</label>
+          <input type="text" placeholder={tipoEntrega === 'Mesa' ? 'Ej: Mesa 4' : 'Ej: Dirección'} value={destino} onChange={e => setDestino(e.target.value)} style={inputSt} />
         </div>
         <div>
-          <label style={labelSt}>🔍 Buscar Producto / Plato:</label>
+          <label style={labelSt}>🔍 Buscar Producto:</label>
           <input type="text" placeholder="Escribe para buscar..." value={filtroBusqueda} onChange={e => setFiltroBusqueda(e.target.value)} style={{ ...inputSt, borderColor: '#0d9488', backgroundColor: '#f0fdfa' }} />
         </div>
       </div>
 
-      {/* PASO 1: CATALOGO Y CARRITO */}
       {pasoPedido === 1 && (
-        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '20px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1.8fr 1fr', gap: '20px' }}>
+          
+          {/* LISTADO VERTICAL DE PRODUCTOS */}
           <div>
             <h4 style={{ color: '#0f766e', fontSize: '1.1rem', marginBottom: '12px', borderBottom: '2px solid #ccfbf1', paddingBottom: '6px' }}>🍔 Carta y Menú Disponible</h4>
             
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '14px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               {[...principales, ...bebidas].map(p => {
                 const seleccionadosProd = adicionalesTemp[p.id] || [];
+                const verGratis = mostrarAdGratis[p.id] || false;
+                const verPorcion = mostrarAdPorcion[p.id] || false;
 
                 return (
-                  <div key={p.id} style={{ border: '1px solid #e2e8f0', padding: '16px', borderRadius: '12px', background: '#ffffff', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', transition: 'transform 0.2s' }}>
-                    <div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                        <h5 style={{ margin: '0 0 4px 0', fontSize: '1rem', color: '#1e293b' }}>{p.nombre}</h5>
-                        {p.codigo_corto && <span style={{ background: '#f1f5f9', padding: '2px 6px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 'bold', color: '#475569' }}>{p.codigo_corto}</span>}
+                  <div key={p.id} style={{ border: '1px solid #e2e8f0', padding: '16px', borderRadius: '12px', background: '#ffffff', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '6px' }}>
+                      <div>
+                        <h5 style={{ margin: '0 0 2px 0', fontSize: '1.05rem', color: '#1e293b' }}>{p.nombre}</h5>
+                        <p style={{ fontSize: '0.8rem', color: '#64748b', margin: 0 }}>{p.descripcion || 'Sin descripción.'}</p>
                       </div>
-                      <p style={{ fontSize: '0.8rem', color: '#64748b', margin: '0 0 10px 0', minHeight: '30px' }}>{p.descripcion || 'Sin descripción detallada.'}</p>
-                      <p style={{ fontSize: '1.05rem', fontWeight: 'bold', color: '#0d9488', margin: '0 0 12px 0' }}>S/. {Number(p.precio_venta).toFixed(2)}</p>
-
-                      {/* ADICIONALES */}
-                      {p.categoria === 'Principal' && (
-                        <div style={{ margin: '10px 0', fontSize: '0.75rem', background: '#f8fafc', padding: '10px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                          <span style={{ fontWeight: 'bold', display: 'block', marginBottom: '4px', color: '#334155' }}>Adicionales Gratis:</span>
-                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '8px' }}>
-                            {adGratis.map(ag => (
-                              <label key={ag.id} style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', color: '#475569' }}>
-                                <input type="checkbox" onChange={() => manejarAdicionalChange(p.id, ag.nombre, 'gratis', 0)} /> {ag.nombre}
-                              </label>
-                            ))}
-                          </div>
-                          <span style={{ fontWeight: 'bold', display: 'block', margin: '8px 0 4px 0', color: '#334155' }}>Porciones Extra:</span>
-                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                            {adPorcion.map(ap => (
-                              <label key={ap.id} style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', color: '#475569' }}>
-                                <input type="checkbox" onChange={() => manejarAdicionalChange(p.id, ap.nombre, 'porcion', ap.precio_venta)} /> {ap.nombre} (+S/. {Number(ap.precio_venta).toFixed(2)})
-                              </label>
-                            ))}
-                          </div>
-                        </div>
-                      )}
+                      <div style={{ textAlign: 'right' }}>
+                        <span style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#0d9488', display: 'block' }}>S/. {Number(p.precio_venta).toFixed(2)}</span>
+                        {p.codigo_corto && <code style={{ background: '#f1f5f9', padding: '2px 6px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 'bold', color: '#475569' }}>{p.codigo_corto}</code>}
+                      </div>
                     </div>
 
-                    <div style={{ display: 'flex', gap: '10px', marginTop: '12px', alignItems: 'center' }}>
-                      <input 
-                        type="number" 
-                        min="1" 
-                        max="10" 
-                        defaultValue={1} 
-                        id={`cant-${p.id}`} 
-                        style={{ width: '55px', padding: '8px', textAlign: 'center', borderRadius: '8px', border: '1px solid #cbd5e1', fontWeight: 'bold', fontSize: '0.9rem' }} 
-                      />
-                      <button 
-                        onClick={() => {
-                          const inputCant = document.getElementById(`cant-${p.id}`);
-                          const cantidad = inputCant ? parseInt(inputCant.value) || 1 : 1;
-                          agregarAlCarrito(p, seleccionadosProd, cantidad);
-                        }} 
-                        style={{ flex: 1, background: 'linear-gradient(135deg, #0d9488 0%, #0f766e 100%)', color: '#fff', border: 'none', padding: '10px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.9rem', boxShadow: '0 2px 4px rgba(13, 148, 136, 0.2)' }}
-                      >
-                        🛒 Agregar
+                    {/* BOTONES DESPLEGABLES PARA ADICIONALES (SOLO SI ES PRINCIPAL) */}
+                    {p.categoria === 'Principal' && (
+                      <div style={{ margin: '10px 0', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <div style={{ display: 'flex', gap: '10px' }}>
+                          {adGratis.length > 0 && (
+                            <button onClick={() => setMostrarAdGratis({...mostrarAdGratis, [p.id]: !verGratis})} style={btnToggleSt}>
+                              {verGratis ? '▲ Ocultar Adicionales Gratis' : '➕ Adicionales Gratis'}
+                            </button>
+                          )}
+                          {adPorcion.length > 0 && (
+                            <button onClick={() => setMostrarAdPorcion({...mostrarAdPorcion, [p.id]: !verPorcion})} style={btnToggleSt}>
+                              {verPorcion ? '▲ Ocultar Porciones Extra' : '➕ Porciones Extra'}
+                            </button>
+                          )}
+                        </div>
+
+                        {verGratis && (
+                          <div style={{ background: '#f8fafc', padding: '10px', borderRadius: '8px', border: '1px solid #e2e8f0', display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                            {adGratis.map(ag => (
+                              <label key={ag.id} style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', fontSize: '0.8rem', color: '#334155' }}>
+                                <input type="checkbox" onChange={() => manejarAdicionalChange(p.id, ag.nombre, 0)} /> {ag.nombre}
+                              </label>
+                            ))}
+                          </div>
+                        )}
+
+                        {verPorcion && (
+                          <div style={{ background: '#f8fafc', padding: '10px', borderRadius: '8px', border: '1px solid #e2e8f0', display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                            {adPorcion.map(ap => (
+                              <label key={ap.id} style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', fontSize: '0.8rem', color: '#334155' }}>
+                                <input type="checkbox" onChange={() => manejarAdicionalChange(p.id, ap.nombre, ap.precio_venta)} /> {ap.nombre} (+S/. {Number(ap.precio_venta).toFixed(2)})
+                              </label>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* CANTIDAD Y BOTÓN AGREGAR */}
+                    <div style={{ display: 'flex', gap: '10px', marginTop: '12px', alignItems: 'center', justifyContent: 'flex-end' }}>
+                      <input type="number" min="1" max="10" defaultValue={1} id={`cant-${p.id}`} style={{ width: '55px', padding: '8px', textAlign: 'center', borderRadius: '8px', border: '1px solid #cbd5e1', fontWeight: 'bold', fontSize: '0.9rem' }} />
+                      <button onClick={() => {
+                        const inputCant = document.getElementById(`cant-${p.id}`);
+                        const cantidad = inputCant ? parseInt(inputCant.value) || 1 : 1;
+                        agregarAlCarrito(p, seleccionadosProd, cantidad);
+                      }} style={{ background: 'linear-gradient(135deg, #0d9488 0%, #0f766e 100%)', color: '#fff', border: 'none', padding: '9px 20px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.9rem' }}>
+                        🛒 Agregar al Pedido
                       </button>
                     </div>
                   </div>
@@ -262,7 +270,7 @@ export default function TerminalPedidos({ idCliente }) {
                   <span style={{ fontSize: '1rem', fontWeight: 'bold', color: '#475569' }}>Total a Pagar:</span>
                   <span style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#0d9488' }}>S/. {calcularTotal().toFixed(2)}</span>
                 </div>
-                <button onClick={() => setPasoPedido(2)} style={{ width: '100%', padding: '14px', background: 'linear-gradient(135deg, #0d9488 0%, #0f766e 100%)', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '1rem', boxShadow: '0 4px 6px rgba(13, 148, 136, 0.25)' }}>
+                <button onClick={() => setPasoPedido(2)} style={{ width: '100%', padding: '14px', background: 'linear-gradient(135deg, #0d9488 0%, #0f766e 100%)', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '1rem' }}>
                   💳 Ir al Cierre de Caja
                 </button>
               </div>
@@ -271,12 +279,11 @@ export default function TerminalPedidos({ idCliente }) {
         </div>
       )}
 
-      {/* PASO 2: CIERRE Y VALIDACIÓN DE PAGO */}
       {pasoPedido === 2 && (
         <div style={{ background: '#ffffff', padding: '30px', borderRadius: '12px', border: '1px solid #e2e8f0', maxWidth: '700px', margin: '0 auto', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.05)' }}>
           <h4 style={{ margin: '0 0 16px 0', fontSize: '1.2rem', color: '#1e293b' }}>💳 Cierre y Validación del Pago</h4>
           <button onClick={() => setPasoPedido(1)} style={{ background: '#64748b', color: '#fff', border: 'none', padding: '8px 14px', borderRadius: '6px', cursor: 'pointer', marginBottom: '20px', fontWeight: '600', fontSize: '0.85rem' }}>
-            ⬅️ Volver al Catálogo
+            ⬅️️ Volver al Catálogo
           </button>
 
           <div style={{ marginBottom: '20px', backgroundColor: '#f8fafc', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
@@ -325,10 +332,10 @@ export default function TerminalPedidos({ idCliente }) {
           </div>
 
           <div style={{ display: 'flex', gap: '15px' }}>
-            <button onClick={() => confirmarCobroYEmitir('Pagado', 'En cocina')} style={{ flex: 1, padding: '14px', background: '#10b981', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.95rem', boxShadow: '0 4px 6px rgba(16, 185, 129, 0.2)' }}>
+            <button onClick={() => confirmarCobroYEmitir('Pagado', 'En cocina')} style={{ flex: 1, padding: '14px', background: '#10b981', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.95rem' }}>
               🔥 Confirmar Cobro y Enviar
             </button>
-            <button onClick={() => confirmarCobroYEmitir('Pendiente', 'En cocina')} style={{ flex: 1, padding: '14px', background: '#f59e0b', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.95rem', boxShadow: '0 4px 6px rgba(245, 158, 11, 0.2)' }}>
+            <button onClick={() => confirmarCobroYEmitir('Pendiente', 'En cocina')} style={{ flex: 1, padding: '14px', background: '#f59e0b', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.95rem' }}>
               ⚡ Enviar a Cocina (Pendiente)
             </button>
           </div>
@@ -340,3 +347,4 @@ export default function TerminalPedidos({ idCliente }) {
 
 const labelSt = { fontSize: '0.8rem', fontWeight: 'bold', display: 'block', marginBottom: '6px', color: '#475569' };
 const inputSt = { width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #cbd5e1', boxSizing: 'border-box', fontSize: '0.9rem', backgroundColor: '#f8fafc', outline: 'none' };
+const btnToggleSt = { background: '#f1f5f9', border: '1px solid #cbd5e1', color: '#0f766e', padding: '5px 10px', borderRadius: '6px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 'bold' };
