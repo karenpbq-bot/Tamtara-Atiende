@@ -162,7 +162,7 @@ export default function CartaMenu({ idCliente }) {
                 <div key={p.id} style={estilos.cardProducto}>
                   <div style={estilos.cardHeader}>
                     <span style={estilos.badgeCategoria}>{p.categoria}</span>
-                    <span style={estilos.precioProducto}>$ {Number(p.precio_venta).toFixed(2)}</span>
+                    <span style={estilos.precioProducto}>S/ {Number(p.precio_venta).toFixed(2)}</span>
                   </div>
                   <h5 style={estilos.nombreProducto}>{p.nombre}</h5>
                   <p style={estilos.descProducto}>{p.descripcion || 'Sin descripción.'}</p>
