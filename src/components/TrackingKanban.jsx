@@ -39,7 +39,7 @@ export default function TrackingKanban({ idCliente, usuarioData }) {
     }
   };
 
-  // Función general para actualizar estado respetando restricciones de Supabase
+  // Función de actualización utilizando estados compatibles con el constraint de Supabase
   const actualizarEstadoPedido = async (id, nuevoEstado, pedidoCerradoValor = 'No') => {
     try {
       const { error } = await supabase
@@ -58,7 +58,7 @@ export default function TrackingKanban({ idCliente, usuarioData }) {
     }
   };
 
-  // Filtrado por buscador inteligente (código, cliente o destino)
+  // Filtrado por buscador inteligente
   const pedidosFiltrados = pedidos.filter(p => {
     const texto = busqueda.toLowerCase();
     return (
@@ -71,9 +71,10 @@ export default function TrackingKanban({ idCliente, usuarioData }) {
   const pedidosEnProceso = pedidosFiltrados.filter(p => p.pedido_cerrado !== 'Sí');
   const pedidosCerrados = pedidosFiltrados.filter(p => p.pedido_cerrado === 'Sí');
 
+  // Filtros adaptados a los nombres de estado de la base de datos
   const enCocina = pedidosEnProceso.filter(p => p.estado === 'En cocina' || p.estado === 'Pendiente' || p.estado === 'En Cocina');
-  const enBarra = pedidosEnProceso.filter(p => p.estado === 'Listo en barra' || p.estado === 'Listo');
-  const enCamino = pedidosEnProceso.filter(p => p.estado === 'En camino' || p.estado === 'En Camino');
+  const enBarra = pedidosEnProceso.filter(p => p.estado === 'Listo' || p.estado === 'Listo en barra');
+  const enCamino = pedidosEnProceso.filter(p => p.estado === 'En Camino' || p.estado === 'En camino');
   const entregados = pedidosEnProceso.filter(p => p.estado === 'Entregado');
 
   return (
@@ -111,14 +112,14 @@ export default function TrackingKanban({ idCliente, usuarioData }) {
         />
       </div>
 
-      {/* KANBAN DE 4 COLUMNAS CON BOTONES BIDIRECCIONALES */}
+      {/* KANBAN DE 4 COLUMNAS */}
       {pestanaActiva === 'proceso' && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '15px', alignItems: 'start' }}>
           <ColumnaKanban 
             titulo="👨‍🍳 En Cocina" 
             items={enCocina} 
             colorHeader="#f59e0b" 
-            onAvanzar={id => actualizarEstadoPedido(id, 'Listo en barra')} 
+            onAvanzar={id => actualizarEstadoPedido(id, 'Listo')} 
             onVerDetalle={setPedidoSeleccionado} 
           />
           <ColumnaKanban 
@@ -126,14 +127,14 @@ export default function TrackingKanban({ idCliente, usuarioData }) {
             items={enBarra} 
             colorHeader="#3b82f6" 
             onRetroceder={id => actualizarEstadoPedido(id, 'En cocina')}
-            onAvanzar={id => actualizarEstadoPedido(id, 'En camino')} 
+            onAvanzar={id => actualizarEstadoPedido(id, 'En Camino')} 
             onVerDetalle={setPedidoSeleccionado} 
           />
           <ColumnaKanban 
             titulo="🛵 En Camino" 
             items={enCamino} 
             colorHeader="#8b5cf6" 
-            onRetroceder={id => actualizarEstadoPedido(id, 'Listo en barra')}
+            onRetroceder={id => actualizarEstadoPedido(id, 'Listo')}
             onAvanzar={id => actualizarEstadoPedido(id, 'Entregado')} 
             onVerDetalle={setPedidoSeleccionado} 
           />
@@ -141,17 +142,17 @@ export default function TrackingKanban({ idCliente, usuarioData }) {
             titulo="✅ Entregados" 
             items={entregados} 
             colorHeader="#10b981" 
-            onRetroceder={id => actualizarEstadoPedido(id, 'En camino')}
+            onRetroceder={id => actualizarEstadoPedido(id, 'En Camino')}
             onCerrar={id => actualizarEstadoPedido(id, 'Entregado', 'Sí')} 
             onVerDetalle={setPedidoSeleccionado} 
           />
         </div>
       )}
 
-      {/* PESTAÑA DE PEDIDOS CERRADOS (CON OPCIÓN DE REACTIVAR/RETROCEDER) */}
+      {/* PESTAÑA DE PEDIDOS CERRADOS */}
       {pestanaActiva === 'cerrados' && (
         <div style={{ background: '#fff', padding: '20px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-          <h4 style={{ margin: '0 0 15px 0', color: '#1e293b' }}>📦 Historial de Pedidos Cerrados (Haz clic para reactivar o ver detalle)</h4>
+          <h4 style={{ margin: '0 0 15px 0', color: '#1e293b' }}>📦 Historial de Pedidos Cerrados</h4>
           {pedidosCerrados.length === 0 ? <p style={{ color: '#94a3b8' }}>No hay pedidos cerrados registrados.</p> : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {pedidosCerrados.map(p => (
@@ -164,7 +165,6 @@ export default function TrackingKanban({ idCliente, usuarioData }) {
                     <button 
                       onClick={() => actualizarEstadoPedido(p.id, 'Entregado', 'No')}
                       style={{ background: '#f59e0b', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 'bold', cursor: 'pointer' }}
-                      title="Regresar a Pedidos en Proceso"
                     >
                       ⬅️ Reabrir Pedido
                     </button>
@@ -219,10 +219,10 @@ export default function TrackingKanban({ idCliente, usuarioData }) {
 function ColumnaKanban({ titulo, items, colorHeader, onRetroceder, onAvanzar, onCerrar, onVerDetalle }) {
   return (
     <div style={{ background: '#ffffff', borderRadius: '12px', border: '1px solid #e2e8f0', overflow: 'hidden', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
-      <div style={{ backgroundColor: colorHeader, color: '#fff', padding: '10px 14px', fontWeight: 'bold', fontSize: '0.95rem', textAlign: 'center' }}>
+      <div style={{ backgroundColor: colorHeader, color: '#fff', padding: '10px 14px', fontWeight: 'bold', fontSize: '0.9rem', textAlign: 'center' }}>
         {titulo} ({items.length})
       </div>
-      <div style={{ padding: '12px', display: 'flex', flexDirection: 'column', gap: '10px', minHeight: '400px', maxHeight: '550px', overflowY: 'auto' }}>
+      <div style={{ padding: '10px', display: 'flex', flexDirection: 'column', gap: '10px', minHeight: '400px', maxHeight: '550px', overflowY: 'auto' }}>
         {items.length === 0 ? <p style={{ fontSize: '0.8rem', color: '#94a3b8', textAlign: 'center', marginTop: '30px' }}>Sin pedidos</p> : (
           items.map(p => {
             const esPendiente = p.estado_pago === 'Pendiente';
@@ -231,43 +231,42 @@ function ColumnaKanban({ titulo, items, colorHeader, onRetroceder, onAvanzar, on
                 key={p.id} 
                 style={{ 
                   background: '#fff', 
-                  padding: '12px', 
+                  padding: '10px', 
                   borderRadius: '8px', 
                   border: '1px solid #e2e8f0', 
-                  borderLeft: esPendiente ? '5px solid #f97316' : '1px solid #e2e8f0', 
+                  borderLeft: esPendiente ? '4px solid #f97316' : '1px solid #e2e8f0', 
                   boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
                 }}
               >
                 <div onClick={() => onVerDetalle(p)} style={{ cursor: 'pointer' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                    <strong style={{ fontSize: '0.9rem', color: '#1e293b' }}>{p.codigo_exacta}</strong>
-                    <span style={{ fontSize: '0.7rem', background: '#f1f5f9', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold' }}>{p.tipo_entrega}</span>
+                    <strong style={{ fontSize: '0.85rem', color: '#1e293b' }}>{p.codigo_exacta}</strong>
+                    <span style={{ fontSize: '0.65rem', background: '#f1f5f9', padding: '2px 5px', borderRadius: '4px', fontWeight: 'bold' }}>{p.tipo_entrega}</span>
                   </div>
-                  <p style={{ margin: '0 0 4px 0', fontSize: '0.85rem', color: '#334155', fontWeight: '600' }}>{p.cliente}</p>
-                  {p.destino_entrega && <p style={{ margin: '0 0 6px 0', fontSize: '0.75rem', color: '#64748b' }}>📍 {p.destino_entrega}</p>}
+                  <p style={{ margin: '0 0 3px 0', fontSize: '0.8rem', color: '#334155', fontWeight: '600' }}>{p.cliente}</p>
+                  {p.destino_entrega && <p style={{ margin: '0 0 5px 0', fontSize: '0.7rem', color: '#64748b' }}>📍 {p.destino_entrega}</p>}
                   
-                  <div style={{ fontSize: '0.75rem', color: '#475569', background: '#f8fafc', padding: '4px 6px', borderRadius: '4px', marginBottom: '6px' }}>
+                  <div style={{ fontSize: '0.7rem', color: '#475569', background: '#f8fafc', padding: '4px 6px', borderRadius: '4px', marginBottom: '5px' }}>
                     {p.items && p.items.map(i => `${i.cantidad}x ${i.nombre}`).join(', ')}
                   </div>
 
-                  <p style={{ margin: '0', fontSize: '0.75rem', color: '#0d9488', fontWeight: 'bold' }}>Total: S/. {Number(p.monto_total).toFixed(2)} {esPendiente ? '🔴 [Pendiente]' : ''}</p>
+                  <p style={{ margin: '0', fontSize: '0.7rem', color: '#0d9488', fontWeight: 'bold' }}>Total: S/. {Number(p.monto_total).toFixed(2)} {esPendiente ? '🔴 [Pend]' : ''}</p>
                 </div>
 
-                {/* BOTONES BIDIRECCIONALES (RETROCEDER Y AVANZAR) */}
-                <div style={{ display: 'flex', gap: '6px', marginTop: '10px', borderTop: '1px solid #f1f5f9', paddingTop: '8px' }}>
+                <div style={{ display: 'flex', gap: '4px', marginTop: '8px', borderTop: '1px solid #f1f5f9', paddingTop: '6px' }}>
                   {onRetroceder && (
-                    <button onClick={() => onRetroceder(p.id)} style={{ background: '#e2e8f0', color: '#334155', border: 'none', padding: '6px 8px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 'bold', cursor: 'pointer' }} title="Retroceder estado">
+                    <button onClick={() => onRetroceder(p.id)} style={{ background: '#e2e8f0', color: '#334155', border: 'none', padding: '4px 8px', borderRadius: '6px', fontSize: '0.7rem', fontWeight: 'bold', cursor: 'pointer' }} title="Retroceder estado">
                       ⬅️
                     </button>
                   )}
                   {onAvanzar && (
-                    <button onClick={() => onAvanzar(p.id)} style={{ flex: 1, background: '#0d9488', color: '#fff', border: 'none', padding: '6px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 'bold', cursor: 'pointer' }}>
+                    <button onClick={() => onAvanzar(p.id)} style={{ flex: 1, background: '#0d9488', color: '#fff', border: 'none', padding: '5px', borderRadius: '6px', fontSize: '0.7rem', fontWeight: 'bold', cursor: 'pointer' }}>
                       Avanzar ➔
                     </button>
                   )}
                   {onCerrar && (
-                    <button onClick={() => onCerrar(p.id)} style={{ flex: 1, background: '#10b981', color: '#fff', border: 'none', padding: '6px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 'bold', cursor: 'pointer' }}>
-                      Cerrar Venta ✔
+                    <button onClick={() => onCerrar(p.id)} style={{ flex: 1, background: '#10b981', color: '#fff', border: 'none', padding: '5px', borderRadius: '6px', fontSize: '0.7rem', fontWeight: 'bold', cursor: 'pointer' }}>
+                      Cerrar ✔
                     </button>
                   )}
                 </div>
