@@ -3,6 +3,7 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Sidebar from './components/Sidebar';
 import { AdminClientes } from './AdminClientes'; // <--- Nuevo componente importado
+import CartaMenu from './components/CartaMenu'; // O './CartaMenu' según tu estructura
 import { supabase } from './supabase'; 
 
 export default function App() {
@@ -81,18 +82,18 @@ export default function App() {
     localStorage.removeItem('atiende_sesion_activa');
   };
 
-  const renderizarModulo = () => {
+ const renderizarModulo = () => {
     switch (moduloActivo) {
       case 'dashboard':
         return <Dashboard usuarioData={usuarioActual} />;
-      case 'admin_clientes': // <--- Conecta aquí el componente de gestión de clientes
+      case 'admin_clientes':
         return <AdminClientes />;
       case 'terminal':
         return <h2>Módulo: Terminal de Pedidos (En construcción)</h2>;
       case 'kanban':
         return <h2>Módulo: Tracking de Comandas (En construcción)</h2>;
       case 'carta':
-        return <h2>Módulo: Carta y Menú (En construcción)</h2>;
+        return <CartaMenu idCliente={usuarioActual?.id_cliente} />; // <--- Aquí conectamos el componente real
       case 'kardex':
         return <h2>Módulo: Kardex e Inventarios (En construcción)</h2>;
       case 'recetas':
