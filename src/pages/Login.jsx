@@ -44,8 +44,9 @@ const Login = ({ onLogin }) => {
       alignItems: 'center'
     },
     logoPlaceholder: {
-      fontSize: '50px',
-      color: '#7fa9f5'
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center'
     },
     clientImage: {
       maxHeight: '70px',
@@ -165,7 +166,17 @@ const Login = ({ onLogin }) => {
           {clientLogoUrl ? (
             <img src={clientLogoUrl} alt="Logo Cliente" style={styles.clientImage} />
           ) : (
-            <div style={styles.logoPlaceholder}>🏢👤</div>
+            <div style={styles.logoPlaceholder}>
+              {/* Icono de Mozo con bandeja SVG */}
+              <svg width="68" height="68" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="8" cy="6" r="3" fill="#7fa9f5"/>
+                <path d="M8 10C5.23858 10 3 12.2386 3 15V22H5.5V16H10.5V22H13V14C13 11.7909 11.2091 10 9 10H8Z" fill="#7fa9f5"/>
+                <path d="M12 12.5L15.5 9V7" stroke="#7fa9f5" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                <rect x="13.5" y="6.5" width="9" height="1.5" rx="0.5" fill="#7fa9f5"/>
+                <path d="M15 6C15 4.067 16.567 2.5 18.5 2.5C20.433 2.5 22 4.067 22 6H15Z" fill="#7fa9f5"/>
+                <circle cx="18.5" cy="2" r="1.2" fill="#7fa9f5"/>
+              </svg>
+            </div>
           )}
         </div>
         
