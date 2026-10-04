@@ -5,8 +5,6 @@ export default function TrackingKanban({ idCliente }) {
   const [pestanaActiva, setPestanaActiva] = useState('proceso'); // 'proceso', 'cerrados'
   const [pedidos, setPedidos] = useState([]);
   const [cargando, setCargando] = useState(true);
-  
-  // Estado para la ventana emergente (Modal de Detalle)
   const [pedidoSeleccionado, setPedidoSeleccionado] = useState(null);
 
   useEffect(() => {
@@ -18,6 +16,7 @@ export default function TrackingKanban({ idCliente }) {
   const cargarPedidos = async () => {
     try {
       setCargando(true);
+      // 🔒 AISLAMIENTO MULTI-TENANT ESTRICTO POR ID_CLIENTE
       const { data, error } = await supabase
         .from('pedidos')
         .select('*')
@@ -38,7 +37,8 @@ export default function TrackingKanban({ idCliente }) {
       const { error } = await supabase
         .from('pedidos')
         .update({ estado: nuevoEstado })
-        .eq('id', id);
+        .eq('id', id)
+        .eq('id_cliente', idCliente);
 
       if (error) throw error;
       cargarPedidos();
@@ -52,7 +52,8 @@ export default function TrackingKanban({ idCliente }) {
       const { error } = await supabase
         .from('pedidos')
         .update({ pedido_cerrado: 'Sí', estado: 'Entregado' })
-        .eq('id', id);
+        .eq('id', id)
+        .eq('id_cliente', idCliente);
 
       if (error) throw error;
       cargarPedidos();
@@ -61,7 +62,7 @@ export default function TrackingKanban({ idCliente }) {
     }
   };
 
-  // Filtrado de estados
+  // Filtrado exclusivo del inquilino en sesión
   const pedidosEnProceso = pedidos.filter(p => p.pedido_cerrado !== 'Sí');
   const pedidosCerrados = pedidos.filter(p => p.pedido_cerrado === 'Sí');
 
@@ -94,26 +95,17 @@ export default function TrackingKanban({ idCliente }) {
         </button>
       </div>
 
-      {/* CONTENIDO: PEDIDOS EN PROCESO (KANBAN DE 4 COLUMNAS) */}
+      {/* KANBAN DE 4 COLUMNAS */}
       {pestanaActiva === 'proceso' && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '15px', alignItems: 'start' }}>
-          
-          {/* 1. EN COCINA */}
           <ColumnaKanban titulo="👨‍🍳 En Cocina" items={enCocina} colorHeader="#f59e0b" onAvanzar={id => cambiarEstado(id, 'Listo en barra')} onVerDetalle={setPedidoSeleccionado} />
-
-          {/* 2. LISTO EN BARRA */}
           <ColumnaKanban titulo="🔔 Listo en Barra" items={enBarra} colorHeader="#3b82f6" onAvanzar={id => cambiarEstado(id, 'En camino')} onVerDetalle={setPedidoSeleccionado} />
-
-          {/* 3. EN CAMINO (DELIVERY) */}
-          <ColumnaKanban titulo="🛵 En Camino" items={enCamino} colorHeader="#8b5cf6" onAvanzar={id => cambiarEstado(id, 'Entregado')} onVerDetalle={setPedidoSeleccionado} />
-
-          {/* 4. ENTREGADOS */}
+          <ColumnaKanban titulo="🛵 En Camino (Delivery)" items={enCamino} colorHeader="#8b5cf6" onAvanzar={id => cambiarEstado(id, 'Entregado')} onVerDetalle={setPedidoSeleccionado} />
           <ColumnaKanban titulo="✅ Entregados" items={entregados} colorHeader="#10b981" onCerrar={cerrarPedido} onVerDetalle={setPedidoSeleccionado} />
-
         </div>
       )}
 
-      {/* CONTENIDO: PEDIDOS CERRADOS */}
+      {/* PESTAÑA DE PEDIDOS CERRADOS */}
       {pestanaActiva === 'cerrados' && (
         <div style={{ background: '#fff', padding: '20px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
           <h4 style={{ margin: '0 0 15px 0', color: '#1e293b' }}>📦 Historial de Pedidos Cerrados</h4>
@@ -135,7 +127,7 @@ export default function TrackingKanban({ idCliente }) {
         </div>
       )}
 
-      {/* VENTANA EMERGENTE (MODAL DE DETALLE) */}
+      {/* MODAL DE DETALLE DE VENTA */}
       {pedidoSeleccionado && (
         <div style={modalOverlaySt}>
           <div style={modalContentSt}>
@@ -150,13 +142,13 @@ export default function TrackingKanban({ idCliente }) {
             <p><strong>Pago:</strong> {pedidoSeleccionado.metodo_pago} {pedidoSeleccionado.estado_pago === 'Pendiente' ? '🔴 (PENDIENTE)' : '🟢 (PAGADO)'}</p>
             <p><strong>Monto Total:</strong> S/. {Number(pedidoSeleccionado.monto_total).toFixed(2)}</p>
 
-            <h4 style={{ margin: '15px 0 8px 0', color: '#0f766e' }}>🍔 Productos Consumidos:</h4>
+            <h4 style={{ margin: '15px 0 8px 0', color: '#0f766e' }}>🍔 Productos Principales y Adicionales:</h4>
             <div style={{ background: '#f8fafc', padding: '10px', borderRadius: '8px', border: '1px solid #e2e8f0', maxHeight: '180px', overflowY: 'auto' }}>
               {pedidoSeleccionado.items && pedidoSeleccionado.items.map((it, idx) => (
                 <div key={idx} style={{ fontSize: '0.9rem', marginBottom: '6px', borderBottom: '1px solid #eee', paddingBottom: '4px' }}>
-                  <strong>{it.cantidad}x {it.nombre}</strong> — S/. {((it.precio_base + (it.adicionales || []).reduce((s, a) => s + a.precio, 0)) * it.cantidad).toFixed(2)}
+                  <strong>{it.cantidad}x {it.nombre}</strong> — S/. {((it.precio_base || it.precio_venta || 0) + (it.adicionales || []).reduce((s, a) => s + a.precio, 0) * it.cantidad).toFixed(2)}
                   {it.adicionales && it.adicionales.length > 0 && (
-                    <div style={{ fontSize: '0.75rem', color: '#64748b' }}>└ {it.adicionales.map(a => a.nombre).join(', ')}</div>
+                    <div style={{ fontSize: '0.75rem', color: '#64748b' }}>└ Adic: {it.adicionales.map(a => a.nombre).join(', ')}</div>
                   )}
                 </div>
               ))}
@@ -173,7 +165,6 @@ export default function TrackingKanban({ idCliente }) {
   );
 }
 
-// Subcomponente para renderizar cada columna del Kanban
 function ColumnaKanban({ titulo, items, colorHeader, onAvanzar, onCerrar, onVerDetalle }) {
   return (
     <div style={{ background: '#ffffff', borderRadius: '12px', border: '1px solid #e2e8f0', overflow: 'hidden', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
@@ -192,9 +183,9 @@ function ColumnaKanban({ titulo, items, colorHeader, onAvanzar, onCerrar, onVerD
                   padding: '12px', 
                   borderRadius: '8px', 
                   border: '1px solid #e2e8f0', 
-                  borderLeft: esPendiente ? '5px solid #ef4444' : '1px solid #e2e8f0', // Borde rojo/naranja si el pago es pendiente
-                  boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-                  position: 'relative'
+                  // 🔴 Línea roja/naranja lateral si el pago está pendiente
+                  borderLeft: esPendiente ? '5px solid #f97316' : '1px solid #e2e8f0', 
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
                 }}
               >
                 <div onClick={() => onVerDetalle(p)} style={{ cursor: 'pointer' }}>
@@ -204,6 +195,12 @@ function ColumnaKanban({ titulo, items, colorHeader, onAvanzar, onCerrar, onVerD
                   </div>
                   <p style={{ margin: '0 0 4px 0', fontSize: '0.85rem', color: '#334155', fontWeight: '600' }}>{p.cliente}</p>
                   {p.destino_entrega && <p style={{ margin: '0 0 6px 0', fontSize: '0.75rem', color: '#64748b' }}>📍 {p.destino_entrega}</p>}
+                  
+                  {/* Resumen rápido de platos principales en la tarjeta */}
+                  <div style={{ fontSize: '0.75rem', color: '#475569', background: '#f8fafc', padding: '4px 6px', borderRadius: '4px', marginBottom: '6px' }}>
+                    {p.items && p.items.map(i => `${i.cantidad}x ${i.nombre}`).join(', ')}
+                  </div>
+
                   <p style={{ margin: '0', fontSize: '0.75rem', color: '#0d9488', fontWeight: 'bold' }}>Total: S/. {Number(p.monto_total).toFixed(2)} {esPendiente ? '🔴 [Pendiente]' : ''}</p>
                 </div>
 
