@@ -7,7 +7,7 @@ export function AdminClientes() {
   
   const [nuevoCliente, setNuevoCliente] = useState({
     nombre_empresa: '',
-    codigo_invitacion_5d: '', // Ajustado a tu columna real de 7 dígitos/código
+    codigo_invitacion_5d: '', // Código de 5 dígitos para el admin del cliente
     tipo_plan: 'Mensual',
     costo_plan: '',
     vigencia_plan: '',
@@ -29,10 +29,11 @@ export function AdminClientes() {
     setLoading(false);
   };
 
-  const generarCodigo7D = () => {
+  // Generador automático de 5 dígitos/caracteres para el administrador del cliente
+  const generarCodigo5D = () => {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     let codigo = '';
-    for (let i = 0; i < 7; i++) {
+    for (let i = 0; i < 5; i++) {
       codigo += chars.charAt(Math.floor(Math.random() * chars.length));
     }
     setNuevoCliente({ ...nuevoCliente, codigo_invitacion_5d: codigo });
@@ -44,7 +45,7 @@ export function AdminClientes() {
     if (error) {
       alert('Error al registrar cliente: ' + error.message);
     } else {
-      alert('¡Cliente y código de acceso creados con éxito!');
+      alert('¡Cliente y código de acceso de 5 dígitos creados con éxito!');
       setNuevoCliente({ nombre_empresa: '', codigo_invitacion_5d: '', tipo_plan: 'Mensual', costo_plan: '', vigencia_plan: '', estado_suscripcion: true });
       fetchClientes();
     }
@@ -53,7 +54,7 @@ export function AdminClientes() {
   return (
     <div style={{ padding: '20px', fontFamily: 'sans-serif' }}>
       <h2>Panel Master: Gestión de Clientes y Suscripciones</h2>
-      <p>Control centralizado de planes, costos, vigencias y códigos de aislamiento.</p>
+      <p>Control centralizado de planes, costos, vigencias y códigos de acceso (5 dígitos) para administradores de inquilinos.</p>
 
       <form onSubmit={handleCrearCliente} style={{ background: '#f9f9f9', padding: '20px', borderRadius: '8px', marginBottom: '30px', display: 'grid', gap: '10px', maxWidth: '600px' }}>
         <h3>Registrar Nuevo Inquilino</h3>
@@ -69,15 +70,15 @@ export function AdminClientes() {
         <div style={{ display: 'flex', gap: '10px' }}>
           <input 
             type="text" 
-            placeholder="Código Único (7D)" 
+            placeholder="Código Admin (5 Dígitos)" 
             value={nuevoCliente.codigo_invitacion_5d} 
             onChange={(e) => setNuevoCliente({ ...nuevoCliente, codigo_invitacion_5d: e.target.value.toUpperCase() })} 
-            maxLength={7}
+            maxLength={5}
             required 
             style={{ padding: '8px', flex: 1 }}
           />
-          <button type="button" onClick={generarCodigo7D} style={{ padding: '8px 12px', background: '#4f46e5', color: '#fff', border: 'none', cursor: 'pointer', borderRadius: '4px' }}>
-            Generar
+          <button type="button" onClick={generarCodigo5D} style={{ padding: '8px 12px', background: '#4f46e5', color: '#fff', border: 'none', cursor: 'pointer', borderRadius: '4px' }}>
+            Generar 5D
           </button>
         </div>
 
@@ -120,7 +121,7 @@ export function AdminClientes() {
           <thead>
             <tr style={{ background: '#f3f4f6' }}>
               <th>Empresa</th>
-              <th>Código</th>
+              <th>Código (5D)</th>
               <th>Plan</th>
               <th>Costo</th>
               <th>Vigencia</th>
