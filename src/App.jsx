@@ -19,7 +19,11 @@ export default function App() {
     setCargando(false);
   }, []);
 
-  const manejarLoginExitoso = (datosUsuario) => {
+  // Función corregida para recibir email y password desde Login.jsx
+  const manejarLogin = (email, password) => {
+    // SIMULACIÓN TEMPORAL: Esto permite pasar al Dashboard.
+    // En el siguiente paso reemplazaremos esto con la validación real de Supabase.
+    const datosUsuario = { correo: email };
     setUsuarioActual(datosUsuario);
     localStorage.setItem('atiende_sesion_activa', JSON.stringify(datosUsuario));
   };
@@ -36,7 +40,8 @@ export default function App() {
       {usuarioActual ? (
         <Dashboard usuarioData={usuarioActual} onCerrarSesion={manejarCerrarSesion} />
       ) : (
-        <Login onLoginExitoso={manejarLoginExitoso} />
+        {/* Nombre de la propiedad corregido a "onLogin" */}
+        <Login onLogin={manejarLogin} />
       )}
     </div>
   );
