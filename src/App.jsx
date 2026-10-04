@@ -76,8 +76,8 @@ export default function App() {
       setModuloActivo('dashboard');
 
     } catch (error) {
-      alert('Error al iniciar sesión: Credenciales incorrectas o usuario no registrado.');
-      console.error(error);
+      console.error("DETALLE EXACTO DEL ERROR EN LOGIN:", error.message || error);
+      alert('Error al iniciar sesión: ' + (error.message || 'Credenciales incorrectas.'));
     }
   };
 
