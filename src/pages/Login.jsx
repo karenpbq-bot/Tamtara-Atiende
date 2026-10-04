@@ -1,17 +1,22 @@
 import React, { useState } from 'react';
-import tamtaraLogo from '../tamtara.png'; // Importación del logo recién subido
+import tamtaraLogo from '../tamtara.png';
 
 const Login = ({ onLogin }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [keepSession, setKeepSession] = useState(false);
+  // Nuevo estado para controlar la visibilidad de la contraseña
+  const [showPassword, setShowPassword] = useState(false);
 
-  // Logo del cliente (empresa que usa la app). Puedes enlazarlo a tu BD después.
   const clientLogoUrl = null; 
 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (onLogin) onLogin(email, password);
+  };
+
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
   };
 
   const styles = {
@@ -75,6 +80,35 @@ const Login = ({ onLogin }) => {
       boxSizing: 'border-box',
       transition: 'border-color 0.2s, box-shadow 0.2s'
     },
+    // Nuevos estilos para el contenedor de la contraseña y el botón
+    passwordWrapper: {
+      position: 'relative',
+      display: 'flex',
+      alignItems: 'center'
+    },
+    passwordInput: {
+      width: '100%',
+      padding: '12px 40px 12px 15px', // Mayor padding a la derecha para que el texto no pise el ícono
+      borderRadius: '25px',
+      border: '1px solid #d1d9e6',
+      backgroundColor: '#ebf0f7',
+      fontSize: '14px',
+      outline: 'none',
+      boxSizing: 'border-box',
+      transition: 'border-color 0.2s, box-shadow 0.2s'
+    },
+    toggleButton: {
+      position: 'absolute',
+      right: '15px',
+      background: 'none',
+      border: 'none',
+      cursor: 'pointer',
+      fontSize: '16px',
+      padding: '0',
+      display: 'flex',
+      alignItems: 'center',
+      color: '#5c6370'
+    },
     checkboxGroup: {
       display: 'flex',
       alignItems: 'center',
@@ -120,7 +154,7 @@ const Login = ({ onLogin }) => {
     poweredLogo: {
       display: 'block',
       margin: '8px auto 0',
-      height: '35px', // Tamaño ajustado para que se vea nítido
+      height: '35px',
       objectFit: 'contain'
     }
   };
@@ -154,14 +188,24 @@ const Login = ({ onLogin }) => {
           
           <div style={styles.formGroup}>
             <label style={styles.label}>Contraseña</label>
-            <input 
-              type="password" 
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              style={styles.input}
-              placeholder="••••••••"
-              required
-            />
+            <div style={styles.passwordWrapper}>
+              <input 
+                type={showPassword ? "text" : "password"} 
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                style={styles.passwordInput}
+                placeholder="••••••••"
+                required
+              />
+              <button 
+                type="button" 
+                onClick={togglePasswordVisibility} 
+                style={styles.toggleButton}
+                title={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+              >
+                {showPassword ? '🙈' : '👁️'}
+              </button>
+            </div>
           </div>
           
           <div style={styles.checkboxGroup}>
