@@ -69,9 +69,10 @@ export default function TrackingKanban({ idCliente, usuarioData }) {
   const pedidosEnProceso = pedidosFiltrados.filter(p => p.pedido_cerrado !== 'Sí');
   const pedidosCerrados = pedidosFiltrados.filter(p => p.pedido_cerrado === 'Sí');
 
+  // Mapeo exacto con los estados válidos de la base de datos
   const enCocina = pedidosEnProceso.filter(p => p.estado === 'Pendiente' || p.estado === 'En Cocina' || p.estado === 'En cocina');
   const enBarra = pedidosEnProceso.filter(p => p.estado === 'Listo');
-  const enCamino = pedidosEnProceso.filter(p => p.estado === 'En camino' || p.estado === 'En Camino');
+  const enCamino = pedidosEnProceso.filter(p => p.estado === 'Despachado');
   const entregados = pedidosEnProceso.filter(p => p.estado === 'Entregado');
 
   return (
@@ -113,7 +114,7 @@ export default function TrackingKanban({ idCliente, usuarioData }) {
       {pestanaActiva === 'proceso' && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '15px', alignItems: 'start' }}>
           <ColumnaKanban 
-            titulo="👨‍‍🍳 En Cocina" 
+            titulo="👨‍🍳 En Cocina" 
             items={enCocina} 
             colorHeader="#f59e0b" 
             onAvanzar={p => actualizarEstadoPedido(p.id, 'Listo')} 
@@ -123,10 +124,11 @@ export default function TrackingKanban({ idCliente, usuarioData }) {
             titulo="🔔 Listo en Barra" 
             items={enBarra} 
             colorHeader="#3b82f6" 
-            onRetroceder={p => actualizarEstadoPedido(p.id, 'En Cocina')}
+            onRetroceder={p => actualizarEstadoPedido(p.id, 'En cocina')}
             onAvanzar={p => {
               const esDelivery = p.tipo_entrega && p.tipo_entrega.toLowerCase().includes('delivery');
-              actualizarEstadoPedido(p.id, esDelivery ? 'En camino' : 'Entregado');
+              // 🔒 USO DE "Despachado" SI ES DELIVERY, O "Entregado" SI ES MESA
+              actualizarEstadoPedido(p.id, esDelivery ? 'Despachado' : 'Entregado');
             }} 
             onVerDetalle={setPedidoSeleccionado} 
           />
@@ -144,8 +146,8 @@ export default function TrackingKanban({ idCliente, usuarioData }) {
             colorHeader="#10b981" 
             onRetroceder={p => {
               const esDelivery = p.tipo_entrega && p.tipo_entrega.toLowerCase().includes('delivery');
-              // 🔒 USO ESTRICTO DE "En camino" EN MINÚSCULAS PARA EVITAR ERROR DE CONSTRAINTS
-              actualizarEstadoPedido(p.id, esDelivery ? 'En camino' : 'Listo');
+              // 🔒 RETROCESO CORRECTO SEGÚN TIPO DE ENTREGA
+              actualizarEstadoPedido(p.id, esDelivery ? 'Despachado' : 'Listo');
             }}
             onCerrar={p => actualizarEstadoPedido(p.id, 'Entregado', 'Sí')} 
             onVerDetalle={setPedidoSeleccionado} 
