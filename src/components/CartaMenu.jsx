@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../clientes';
+import { supabase } from '../supabase';
 
 export default function CartaMenu({ idCliente }) {
   const [productos, setProductos] = useState([]);
