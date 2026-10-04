@@ -59,9 +59,11 @@ export default function App() {
         }
       }
 
-      // 4. Obtener el id_cliente asociado al código del usuario (si no es superadmin)
+      // 4. Obtener el id_cliente asociado
       let idClienteAsociado = null;
-      if (perfilData.codigo_7d) {
+      if (perfilData.correo === 'laexacta2807@gmail.com' || perfilData.rol === 'superadmin') {
+        idClienteAsociado = 2; // Forzamos directamente el id_cliente 2 para La Exacta o superadmin maestro
+      } else if (perfilData.codigo_7d) {
         const { data: clienteData } = await supabase
           .from('uni_clientes')
           .select('id_cliente')
@@ -72,6 +74,14 @@ export default function App() {
           idClienteAsociado = clienteData.id_cliente;
         }
       }
+
+      const datosCompletos = {
+        correo: email,
+        rol: perfilData.rol, 
+        nombre: perfilData.nombres_apellidos,
+        codigo_7d: perfilData.codigo_7d,
+        id_cliente: idClienteAsociado // <--- Asegura que aquí viaja el 2
+      };
 
       // 5. Guardar la sesión activa con su respectivo id_cliente y código de aislamiento
       const datosCompletos = {
