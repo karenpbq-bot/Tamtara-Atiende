@@ -24,7 +24,7 @@ export default function App() {
 
   const manejarLogin = async (email, password) => {
     try {
-      // 1. Buscar directamente el usuario en tu tabla unificada 'uni_usuarios'
+      // 1. Consultar directamente el perfil y credenciales en la tabla unificada 'uni_usuarios'
       const { data: perfilData, error: perfilError } = await supabase
         .from('uni_usuarios')
         .select('*')
@@ -41,22 +41,23 @@ export default function App() {
         return;
       }
 
-      // 3. Validar la contraseña (si es superadmin manejado por Supabase o contraseña normal en base de datos)
-      if (perfilData.rol !== 'superadmin') {
-        if (perfilData.password_hash !== password) {
-          alert("Contraseña incorrecta.");
-          return;
-        }
-      } else {
-        // Si es superadmin, validamos con Supabase Auth por seguridad maestra
+      // 3. Validar contraseña según el rol
+      if (perfilData.rol === 'superadmin') {
+        // El superadmin utiliza el sistema oficial de Supabase Auth
         const { error: authError } = await supabase.auth.signInWithPassword({
           email: email,
           password: password,
         });
         if (authError) throw authError;
+      } else {
+        // Los administradores de clientes y personal validan contra su password_hash guardado en la tabla
+        if (perfilData.password_hash !== password) {
+          alert('Error al iniciar sesión: Credenciales incorrectas.');
+          return;
+        }
       }
 
-      // 4. Guardar la sesión localmente
+      // 4. Guardar la sesión activa con su respectivo código de aislamiento
       const datosCompletos = {
         correo: email,
         rol: perfilData.rol, 
