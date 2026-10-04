@@ -72,7 +72,7 @@ export default function App() {
     switch (moduloActivo) {
       case 'dashboard':
         return <Dashboard usuarioData={usuarioActual} />;
-      case 'admin_clientes': // <--- Enlace al panel maestro de Superadmin
+      case 'admin_clientes': // <--- Conecta aquí el componente de gestión de clientes
         return <AdminClientes />;
       case 'terminal':
         return <h2>Módulo: Terminal de Pedidos (En construcción)</h2>;
