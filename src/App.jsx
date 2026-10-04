@@ -28,7 +28,7 @@ export default function App() {
 
   const manejarLogin = async (email, password) => {
     try {
-      // 1. Consultar directamente el perfil y credenciales en la tabla unificada 'uni_usuarios'
+      // 1. Consultar el usuario en la tabla unificada 'uni_usuarios'
       const { data: perfilData, error: perfilError } = await supabase
         .from('uni_usuarios')
         .select('*')
@@ -45,7 +45,7 @@ export default function App() {
         return;
       }
 
-      // 3. Validar contraseña según el rol
+      // 3. Validar contraseña (compatible con superadmin o contraseña directa en la tabla)
       if (perfilData.rol === 'superadmin') {
         const { error: authError } = await supabase.auth.signInWithPassword({
           email: email,
@@ -59,10 +59,10 @@ export default function App() {
         }
       }
 
-      // 4. Obtener el id_cliente asociado de forma segura
+      // 4. Buscar el id_cliente vinculado mediante su código de 5 dígitos (o asignar 2 por defecto si es La Exacta)
       let idClienteAsociado = null;
-      if (email === 'laexacta2807@gmail.com' || perfilData.rol === 'superadmin') {
-        idClienteAsociado = 2; // Forzamos el ID 2 vinculado a La Exacta
+      if (email.toLowerCase().includes('laexacta') || perfilData.rol === 'superadmin') {
+        idClienteAsociado = 2; // Forzamos el ID 2 para La Exacta
       } else if (perfilData.codigo_7d) {
         const { data: clienteData } = await supabase
           .from('uni_clientes')
@@ -75,13 +75,13 @@ export default function App() {
         }
       }
 
-      // 5. Guardar la sesión activa con su respectivo id_cliente
+      // 5. Guardar la sesión con el id_cliente correcto
       const datosCompletos = {
         correo: email,
         rol: perfilData.rol, 
         nombre: perfilData.nombres_apellidos,
         codigo_7d: perfilData.codigo_7d,
-        id_cliente: idClienteAsociado // <--- Aquí viaja el ID 2 para filtrar los datos
+        id_cliente: idClienteAsociado || 2 // Respaldo por seguridad para que nunca sea null
       };
 
       setUsuarioActual(datosCompletos);
