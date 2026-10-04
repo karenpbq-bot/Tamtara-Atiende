@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../clientes';
+import { supabase } from '../supabase';
 import CartaMenu from '../components/CartaMenu';
 
 // Subcomponente modular: Bloque tipo acordeón (Desplegable)
