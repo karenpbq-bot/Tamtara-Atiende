@@ -29,71 +29,66 @@ export default function App() {
 
   const manejarLogin = async (email, password) => {
     try {
-      // 1. Consultar el perfil del usuario en la tabla 'uni_usuarios'
-      const { data: perfilData, error: perfilError } = await supabase
+      let perfilData = null;
+
+      // 1. Intentar consultar el usuario en la tabla 'uni_usuarios'
+      const { data } = await supabase
         .from('uni_usuarios')
         .select('*')
         .eq('correo', email.trim().toLowerCase())
         .maybeSingle();
 
-      // Si no existe en uni_usuarios pero es el correo de La Exacta o Superadmin, permitimos acceso directo de emergencia
-      let rolUsuario = 'admin';
-      let nombreUsuario = 'Administrador';
-      let idClienteAsociado = 2; // Por defecto asignamos La Exacta (id_cliente = 2)
-      let codigo7d = null;
+      perfilData = data;
 
-      if (perfilData) {
-        if (perfilData.estado === false) {
-          alert("Esta cuenta está desactivada.");
-          return;
-        }
+      // 2. ACCESO DIRECTO DE EMERGENCIA PARA LA EXACTA O SUPERADMIN
+      if (!perfilData && email.toLowerCase() === 'laexacta2807@gmail.com') {
+        const datosCompletos = {
+          correo: email,
+          rol: 'admin',
+          nombre: 'Administrador La Exacta',
+          codigo_7d: 'EXACT',
+          id_cliente: 2 // ⬅️ Forzamos el ID 2 de La Exacta
+        };
+        setUsuarioActual(datosCompletos);
+        localStorage.setItem('atiende_sesion_activa', JSON.stringify(datosCompletos));
+        setModuloActivo('dashboard');
+        return;
+      }
 
-        // Validación de contraseña
-        if (perfilData.rol === 'superadmin') {
-          const { error: authError } = await supabase.auth.signInWithPassword({
-            email: email,
-            password: password,
-          });
-          if (authError) throw authError;
-        } else {
-          if (perfilData.password_hash && perfilData.password_hash !== password) {
-            alert('Error al iniciar sesión: Credenciales incorrectas.');
-            return;
-          }
-        }
+      if (!perfilData) {
+        throw new Error("Usuario no registrado en la base de datos.");
+      }
 
-        rolUsuario = perfilData.rol;
-        nombreUsuario = perfilData.nombres_apellidos;
-        codigo7d = perfilData.codigo_7d;
+      if (perfilData.estado === false) {
+        alert("Esta cuenta está desactivada.");
+        return;
+      }
 
-        // Buscar el id_cliente real vinculado mediante el código si lo tiene
-        if (perfilData.codigo_7d) {
-          const { data: clienteData } = await supabase
-            .from('uni_clientes')
-            .select('id_cliente')
-            .eq('codigo_invitacion_5d', perfilData.codigo_7d)
-            .maybeSingle();
-          
-          if (clienteData) {
-            idClienteAsociado = clienteData.id_cliente;
-          }
-        } else if (perfilData.id_cliente) {
-          idClienteAsociado = perfilData.id_cliente;
-        }
+      // 3. Validación de contraseña
+      if (perfilData.rol === 'superadmin') {
+        const { error: authError } = await supabase.auth.signInWithPassword({
+          email: email,
+          password: password,
+        });
+        if (authError) throw authError;
       } else {
-        // Fallback operativo para el admin principal si la tabla uni_usuarios tuviera algún desfase
-        if (email.toLowerCase() !== 'laexacta2807@gmail.com') {
-          throw new Error("Usuario no registrado en la base de datos.");
+        if (perfilData.password_hash && perfilData.password_hash !== password) {
+          alert('Error al iniciar sesión: Credenciales incorrectas.');
+          return;
         }
       }
 
-      // 2. Consolidar la sesión activa con el id_cliente correcto
+      // 4. Determinar el id_cliente asociado
+      const idClienteAsociado = (email.toLowerCase().includes('laexacta') || perfilData.rol === 'superadmin') 
+        ? 2 
+        : (perfilData.id_cliente || 2);
+
       const datosCompletos = {
         correo: email,
-        rol: rolUsuario, 
-        nombre: nombreUsuario,
-        codigo_7d: codigo7d,
-        id_cliente: idClienteAsociado // ⬅️ Este es el parámetro vital que alimenta las consultas
+        rol: perfilData.rol, 
+        nombre: perfilData.nombres_apellidos,
+        codigo_7d: perfilData.codigo_7d,
+        id_cliente: idClienteAsociado
       };
 
       setUsuarioActual(datosCompletos);
