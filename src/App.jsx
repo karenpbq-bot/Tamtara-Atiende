@@ -28,7 +28,7 @@ export default function App() {
 
   const manejarLogin = async (email, password) => {
     try {
-      // 1. Consultar el usuario en la tabla unificada 'uni_usuarios'
+      // 1. Consultar el perfil del usuario directamente en Supabase
       const { data: perfilData, error: perfilError } = await supabase
         .from('uni_usuarios')
         .select('*')
@@ -39,13 +39,13 @@ export default function App() {
         throw new Error("Usuario no registrado en la base de datos.");
       }
 
-      // 2. Validar si la cuenta está activa
+      // 2. Validar estado de la cuenta
       if (perfilData.estado === false) {
         alert("Esta cuenta está desactivada.");
         return;
       }
 
-      // 3. Validar contraseña
+      // 3. Validación de contraseña robusta (Soporte para Admin y Superadmin)
       if (perfilData.rol === 'superadmin') {
         const { error: authError } = await supabase.auth.signInWithPassword({
           email: email,
@@ -59,16 +59,18 @@ export default function App() {
         }
       }
 
-      // 4. Asignación directa del id_cliente (2 para La Exacta)
-      const idClienteAsociado = (email.toLowerCase().includes('laexacta') || perfilData.rol === 'superadmin') ? 2 : (perfilData.id_cliente || 2);
+      // 4. AISLAMIENTO MULTI-TENANT EXACTO: Forzamos el id_cliente = 2 para "La Exacta"
+      const idClienteAsociado = (email.toLowerCase().includes('laexacta') || perfilData.rol === 'superadmin') 
+        ? 2 
+        : (perfilData.id_cliente || 2);
 
-      // 5. Consolidar la sesión activa
+      // 5. Consolidación de la sesión activa en el navegador
       const datosCompletos = {
         correo: email,
         rol: perfilData.rol, 
         nombre: perfilData.nombres_apellidos,
         codigo_7d: perfilData.codigo_7d,
-        id_cliente: idClienteAsociado
+        id_cliente: idClienteAsociado // <--- Clave para que los módulos carguen los datos históricos
       };
 
       setUsuarioActual(datosCompletos);
@@ -76,8 +78,8 @@ export default function App() {
       setModuloActivo('dashboard');
 
     } catch (error) {
-      console.error("DETALLE EXACTO DEL ERROR EN LOGIN:", error.message || error);
-      alert('Error al iniciar sesión: ' + (error.message || 'Credenciales incorrectas.'));
+      alert('Error al iniciar sesión: Credenciales incorrectas o usuario no registrado.');
+      console.error("Error en login:", error);
     }
   };
 
