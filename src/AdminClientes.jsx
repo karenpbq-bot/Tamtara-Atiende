@@ -5,7 +5,6 @@ export function AdminClientes() {
   const [clientes, setClientes] = useState([]);
   const [loading, setLoading] = useState(true);
   
-  // Estado para el modal de gestión de usuarios del cliente seleccionado
   const [clienteSeleccionado, setClienteSeleccionado] = useState(null);
   const [usuariosCliente, setUsuariosCliente] = useState([]);
   const [nuevoUsuario, setNuevoUsuario] = useState({
@@ -51,30 +50,28 @@ export function AdminClientes() {
     setNuevoCliente({ ...nuevoCliente, codigo_invitacion_5d: codigo });
   };
 
-  const handleCrearUsuarioCliente = async (e) => {
+  const handleCrearCliente = async (e) => {
     e.preventDefault();
-    if (!clienteSeleccionado) return;
-
-    // Inserción directa en la tabla uni_usuarios sin pasar por Supabase Auth (Opción 2)
-    const { error: dbError } = await supabase.from('uni_usuarios').insert([{
-      correo: nuevoUsuario.correo,
-      nombres_apellidos: nuevoUsuario.nombres_apellidos,
-      rol: nuevoUsuario.rol,
-      codigo_7d: clienteSeleccionado.codigo_invitacion_5d,
-      estado: true,
-      password_hash: nuevoUsuario.password // Aquí guardamos la contraseña para tu validación personalizada
-    }]);
-
-    if (dbError) {
-      alert('Error al registrar usuario: ' + dbError.message);
+    const { error } = await supabase.from('uni_clientes').insert([nuevoCliente]);
+    if (error) {
+      alert('Error al registrar cliente: ' + error.message);
     } else {
-      alert(`¡Usuario ${nuevoUsuario.rol} creado con éxito para ${clienteSeleccionado.nombre_marca}!`);
-      setNuevoUsuario({ correo: '', password: '', nombres_apellidos: '', rol: 'admin' });
-      abrirGestionUsuarios(clienteSeleccionado); // Recargar la lista del modal
+      alert('¡Cliente y código de acceso de 5 dígitos creados con éxito!');
+      setNuevoCliente({
+        nombre_empresa: '',
+        nombre_marca: '',
+        tipo_especialidad: 'Restaurante / Cafetería',
+        codigo_invitacion_5d: '',
+        tipo_plan: 'Mensual',
+        costo_plan: '',
+        vigencia_plan: '',
+        estado: true,
+        estado_suscripcion: true
+      });
+      fetchClientes();
     }
   };
 
-  // Cargar los usuarios asociados al código del cliente seleccionado
   const abrirGestionUsuarios = async (cliente) => {
     setClienteSeleccionado(cliente);
     const { data, error } = await supabase
@@ -94,61 +91,30 @@ export function AdminClientes() {
     e.preventDefault();
     if (!clienteSeleccionado) return;
 
-    // 1. Crear el usuario en Supabase Auth
-    const { data: authData, error: authError } = await supabase.auth.signUp({
-      email: nuevoUsuario.correo,
-      password: nuevoUsuario.password,
-      options: {
-        data: {
-          nombres_apellidos: nuevoUsuario.nombres_apellidos,
-          rol: nuevoUsuario.rol,
-          codigo_7d: clienteSeleccionado.codigo_invitacion_5d
-        }
-      }
-    });
-
-    if (authError) {
-      alert('Error al registrar credenciales de Auth: ' + authError.message);
-      return;
-    }
-
-    // 2. Registrar en la tabla uni_usuarios vinculando el código del cliente
     const { error: dbError } = await supabase.from('uni_usuarios').insert([{
       correo: nuevoUsuario.correo,
       nombres_apellidos: nuevoUsuario.nombres_apellidos,
       rol: nuevoUsuario.rol,
       codigo_7d: clienteSeleccionado.codigo_invitacion_5d,
       estado: true,
-      password_hash: 'gestionado_por_supabase'
+      password_hash: nuevoUsuario.password
     }]);
 
     if (dbError) {
-      alert('Error al registrar en uni_usuarios: ' + dbError.message);
+      alert('Error al registrar usuario: ' + dbError.message);
     } else {
       alert(`¡Usuario ${nuevoUsuario.rol} creado con éxito para ${clienteSeleccionado.nombre_marca}!`);
       setNuevoUsuario({ correo: '', password: '', nombres_apellidos: '', rol: 'admin' });
-      abrirGestionUsuarios(clienteSeleccionado); // Recargar lista
+      abrirGestionUsuarios(clienteSeleccionado);
     }
   };
 
   const styles = {
-    container: {
-      padding: '10px 20px',
-      fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
-      color: '#1f2937'
-    },
+    container: { padding: '10px 20px', fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif", color: '#1f2937' },
     header: { marginBottom: '24px' },
     title: { fontSize: '24px', fontWeight: '700', color: '#111827', marginBottom: '6px' },
     subtitle: { fontSize: '14px', color: '#6b7280' },
-    card: {
-      background: '#ffffff',
-      padding: '28px',
-      borderRadius: '12px',
-      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
-      marginBottom: '36px',
-      maxWidth: '750px',
-      border: '1px solid #e5e7eb'
-    },
+    card: { background: '#ffffff', padding: '28px', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)', marginBottom: '36px', maxWidth: '750px', border: '1px solid #e5e7eb' },
     formTitle: { fontSize: '16px', fontWeight: '600', color: '#374151', marginBottom: '16px' },
     inputGroup: { marginBottom: '16px', display: 'flex', flexDirection: 'column', gap: '6px' },
     label: { fontSize: '13px', fontWeight: '600', color: '#4b5563' },
@@ -276,7 +242,6 @@ export function AdminClientes() {
         )}
       </div>
 
-      {/* MODAL DE GESTIÓN DE USUARIOS DEL CLIENTE */}
       {clienteSeleccionado && (
         <div style={styles.modalOverlay}>
           <div style={styles.modalContent}>
@@ -288,7 +253,6 @@ export function AdminClientes() {
               Código de aislamiento vinculado: <strong>{clienteSeleccionado.codigo_invitacion_5d}</strong>
             </p>
 
-            {/* Formulario para crear usuario */}
             <form onSubmit={handleCrearUsuarioCliente} style={{ background: '#f9fafb', padding: '16px', borderRadius: '8px', marginBottom: '20px', border: '1px solid #e5e7eb' }}>
               <h4 style={{ margin: '0 0 12px 0', fontSize: '14px', color: '#374151' }}>Crear Nuevo Usuario (Admin o Personal)</h4>
               
@@ -304,7 +268,7 @@ export function AdminClientes() {
 
               <div style={styles.rowFlex}>
                 <div style={{ ...styles.inputGroup, flex: 1 }}>
-                  <label style={styles.label}>Contraseña Temporal</label>
+                  <label style={styles.label}>Contraseña</label>
                   <input type="password" placeholder="******" value={nuevoUsuario.password} onChange={(e) => setNuevoUsuario({ ...nuevoUsuario, password: e.target.value })} required style={styles.input} />
                 </div>
                 <div style={{ ...styles.inputGroup, flex: 1 }}>
@@ -320,7 +284,6 @@ export function AdminClientes() {
               <button type="submit" style={{ ...styles.buttonSubmit, width: '100%', marginTop: '5px' }}>Crear Usuario Vinculado</button>
             </form>
 
-            {/* Lista de usuarios creados para este cliente */}
             <h4 style={{ fontSize: '14px', color: '#374151', marginBottom: '10px' }}>Usuarios Asignados a este Inquilino</h4>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
               <thead>
