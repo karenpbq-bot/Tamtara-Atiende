@@ -39,7 +39,6 @@ export default function TrackingKanban({ idCliente, usuarioData }) {
     }
   };
 
-  // Función utilizando exclusivamente los 4 estados válidos permitidos por check_estado
   const actualizarEstadoPedido = async (id, nuevoEstado, pedidoCerradoValor = 'No') => {
     try {
       const { error } = await supabase
@@ -70,7 +69,7 @@ export default function TrackingKanban({ idCliente, usuarioData }) {
   const pedidosEnProceso = pedidosFiltrados.filter(p => p.pedido_cerrado !== 'Sí');
   const pedidosCerrados = pedidosFiltrados.filter(p => p.pedido_cerrado === 'Sí');
 
-  // Mapeo adaptado exactamente a los 4 estados que acepta la base de datos
+  // Clasificación de estados en las 4 columnas del Kanban
   const enCocina = pedidosEnProceso.filter(p => p.estado === 'Pendiente' || p.estado === 'En Cocina' || p.estado === 'En cocina');
   const enBarra = pedidosEnProceso.filter(p => p.estado === 'Listo');
   const enCamino = pedidosEnProceso.filter(p => p.estado === 'En Camino' || p.estado === 'En camino');
@@ -118,31 +117,39 @@ export default function TrackingKanban({ idCliente, usuarioData }) {
             titulo="👨‍🍳 En Cocina" 
             items={enCocina} 
             colorHeader="#f59e0b" 
-            onAvanzar={id => actualizarEstadoPedido(id, 'Listo')} 
+            onAvanzar={p => actualizarEstadoPedido(p.id, 'Listo')} 
             onVerDetalle={setPedidoSeleccionado} 
           />
           <ColumnaKanban 
             titulo="🔔 Listo en Barra" 
             items={enBarra} 
             colorHeader="#3b82f6" 
-            onRetroceder={id => actualizarEstadoPedido(id, 'En Cocina')}
-            onAvanzar={id => actualizarEstadoPedido(id, 'Entregado')} 
+            onRetroceder={p => actualizarEstadoPedido(p.id, 'En Cocina')}
+            onAvanzar={p => {
+              // Si es Delivery va a "En Camino", si es Salón/Mesa salta directo a "Entregado"
+              const esDelivery = p.tipo_entrega && p.tipo_entrega.toLowerCase().includes('delivery');
+              actualizarEstadoPedido(p.id, esDelivery ? 'En Camino' : 'Entregado');
+            }} 
             onVerDetalle={setPedidoSeleccionado} 
           />
           <ColumnaKanban 
             titulo="🛵 En Camino" 
             items={enCamino} 
             colorHeader="#8b5cf6" 
-            onRetroceder={id => actualizarEstadoPedido(id, 'Listo')}
-            onAvanzar={id => actualizarEstadoPedido(id, 'Entregado')} 
+            onRetroceder={p => actualizarEstadoPedido(p.id, 'Listo')}
+            onAvanzar={p => actualizarEstadoPedido(p.id, 'Entregado')} 
             onVerDetalle={setPedidoSeleccionado} 
           />
           <ColumnaKanban 
             titulo="✅ Entregados" 
             items={entregados} 
             colorHeader="#10b981" 
-            onRetroceder={id => actualizarEstadoPedido(id, 'Listo')}
-            onCerrar={id => actualizarEstadoPedido(id, 'Entregado', 'Sí')} 
+            onRetroceder={p => {
+              // Si es Delivery regresa a "En Camino", si es Mesa regresa a "Listo"
+              const esDelivery = p.tipo_entrega && p.tipo_entrega.toLowerCase().includes('delivery');
+              actualizarEstadoPedido(p.id, esDelivery ? 'En Camino' : 'Listo');
+            }}
+            onCerrar={p => actualizarEstadoPedido(p.id, 'Entregado', 'Sí')} 
             onVerDetalle={setPedidoSeleccionado} 
           />
         </div>
@@ -254,17 +261,17 @@ function ColumnaKanban({ titulo, items, colorHeader, onRetroceder, onAvanzar, on
 
                 <div style={{ display: 'flex', gap: '4px', marginTop: '8px', borderTop: '1px solid #f1f5f9', paddingTop: '6px' }}>
                   {onRetroceder && (
-                    <button onClick={() => onRetroceder(p.id)} style={{ background: '#e2e8f0', color: '#334155', border: 'none', padding: '4px 8px', borderRadius: '6px', fontSize: '0.7rem', fontWeight: 'bold', cursor: 'pointer' }} title="Retroceder estado">
+                    <button onClick={() => onRetroceder(p)} style={{ background: '#e2e8f0', color: '#334155', border: 'none', padding: '4px 8px', borderRadius: '6px', fontSize: '0.7rem', fontWeight: 'bold', cursor: 'pointer' }} title="Retroceder estado">
                       ⬅️
                     </button>
                   )}
                   {onAvanzar && (
-                    <button onClick={() => onAvanzar(p.id)} style={{ flex: 1, background: '#0d9488', color: '#fff', border: 'none', padding: '5px', borderRadius: '6px', fontSize: '0.7rem', fontWeight: 'bold', cursor: 'pointer' }}>
+                    <button onClick={() => onAvanzar(p)} style={{ flex: 1, background: '#0d9488', color: '#fff', border: 'none', padding: '5px', borderRadius: '6px', fontSize: '0.7rem', fontWeight: 'bold', cursor: 'pointer' }}>
                       Avanzar ➔
                     </button>
                   )}
                   {onCerrar && (
-                    <button onClick={() => onCerrar(p.id)} style={{ flex: 1, background: '#10b981', color: '#fff', border: 'none', padding: '5px', borderRadius: '6px', fontSize: '0.7rem', fontWeight: 'bold', cursor: 'pointer' }}>
+                    <button onClick={() => onCerrar(p)} style={{ flex: 1, background: '#10b981', color: '#fff', border: 'none', padding: '5px', borderRadius: '6px', fontSize: '0.7rem', fontWeight: 'bold', cursor: 'pointer' }}>
                       Cerrar ✔
                     </button>
                   )}
