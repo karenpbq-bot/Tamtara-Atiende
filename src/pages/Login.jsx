@@ -5,7 +5,6 @@ const Login = ({ onLogin }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [keepSession, setKeepSession] = useState(false);
-  // Nuevo estado para controlar la visibilidad de la contraseña
   const [showPassword, setShowPassword] = useState(false);
 
   const clientLogoUrl = null; 
@@ -80,7 +79,6 @@ const Login = ({ onLogin }) => {
       boxSizing: 'border-box',
       transition: 'border-color 0.2s, box-shadow 0.2s'
     },
-    // Nuevos estilos para el contenedor de la contraseña y el botón
     passwordWrapper: {
       position: 'relative',
       display: 'flex',
@@ -88,7 +86,7 @@ const Login = ({ onLogin }) => {
     },
     passwordInput: {
       width: '100%',
-      padding: '12px 40px 12px 15px', // Mayor padding a la derecha para que el texto no pise el ícono
+      padding: '12px 40px 12px 15px', 
       borderRadius: '25px',
       border: '1px solid #d1d9e6',
       backgroundColor: '#ebf0f7',
@@ -103,11 +101,11 @@ const Login = ({ onLogin }) => {
       background: 'none',
       border: 'none',
       cursor: 'pointer',
-      fontSize: '16px',
       padding: '0',
       display: 'flex',
       alignItems: 'center',
-      color: '#5c6370'
+      color: '#8892a3', // Color gris sutil para el icono
+      transition: 'color 0.2s'
     },
     checkboxGroup: {
       display: 'flex',
@@ -181,7 +179,7 @@ const Login = ({ onLogin }) => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               style={styles.input}
-              placeholder="ejemplo@correo.com"
+              placeholder="admin@restaurante.com"
               required
             />
           </div>
@@ -203,7 +201,18 @@ const Login = ({ onLogin }) => {
                 style={styles.toggleButton}
                 title={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
               >
-                {showPassword ? '🙈' : '👁️'}
+                {/* Iconos SVG Minimalistas */}
+                {showPassword ? (
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                    <line x1="1" y1="1" x2="23" y2="23"></line>
+                  </svg>
+                ) : (
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                    <circle cx="12" cy="12" r="3"></circle>
+                  </svg>
+                )}
               </button>
             </div>
           </div>
@@ -219,7 +228,7 @@ const Login = ({ onLogin }) => {
             <label htmlFor="keepSession">Mantener sesión abierta</label>
           </div>
           
-          <button type="submit" style={styles.button}>Ingresar</button>
+          <button type="submit" style={styles.button}>Ingresar al Sistema</button>
         </form>
 
         <div style={styles.dividerLine}></div>
