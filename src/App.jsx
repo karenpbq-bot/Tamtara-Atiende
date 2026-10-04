@@ -7,7 +7,7 @@ import CartaMenu from './components/CartaMenu';
 import TerminalPedidos from './components/TerminalPedidos';
 import KardexInventarios from './components/KardexInventarios';
 import TrackingKanban from './components/TrackingKanban';
-import RecetasCostos from './components/RecetasCostos'; // Módulo de recetas articulado
+import RecetasCostos from './components/RecetasCostos';
 import { supabase } from './supabase'; 
 
 export default function App() {
@@ -56,23 +56,6 @@ export default function App() {
         .maybeSingle();
 
       perfilData = data;
-
-      if (!perfilData) {
-        throw new Error("Usuario no registrado en la base de datos.");
-      }
-...
-        const datosCompletos = {
-          correo: email,
-          rol: 'admin',
-          nombre: 'Administrador La Exacta',
-          codigo_7d: 'EXACT',
-          id_cliente: 2 // ⬅️ Forzamos el ID 2 de La Exacta
-        };
-        setUsuarioActual(datosCompletos);
-        localStorage.setItem('atiende_sesion_activa', JSON.stringify(datosCompletos));
-        setModuloActivo('dashboard');
-        return;
-      }
 
       if (!perfilData) {
         throw new Error("Usuario no registrado en la base de datos.");
@@ -141,7 +124,7 @@ export default function App() {
       case 'kardex':
         return <KardexInventarios idCliente={usuarioActual?.id_cliente} />;
       case 'recetas':
-        return <RecetasCostos idCliente={usuarioActual?.id_cliente} />; // ⬅️ Módulo conectado
+        return <RecetasCostos idCliente={usuarioActual?.id_cliente} />;
       default:
         return <Dashboard usuarioData={usuarioActual} />;
     }
