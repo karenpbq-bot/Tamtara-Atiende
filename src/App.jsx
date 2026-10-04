@@ -8,6 +8,7 @@ import TerminalPedidos from './components/TerminalPedidos';
 import KardexInventarios from './components/KardexInventarios';
 import TrackingKanban from './components/TrackingKanban';
 import RecetasCostos from './components/RecetasCostos';
+import Reportes from './components/Reportes';
 import { supabase } from './supabase'; 
 
 export default function App() {
@@ -136,6 +137,8 @@ export default function App() {
         return <KardexInventarios idCliente={usuarioActual?.id_cliente} />;
       case 'recetas':
         return <RecetasCostos idCliente={usuarioActual?.id_cliente} />;
+      case 'reportes':
+      return <Reportes idCliente={usuarioActual?.id_cliente} usuarioData={usuarioActual} />;
       default:
         return <Dashboard usuarioData={usuarioActual} />;
     }
