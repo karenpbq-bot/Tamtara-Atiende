@@ -4,14 +4,14 @@ import { supabase } from '../supabase';
 export default function TerminalPedidos({ idCliente }) {
   const [productos, setProductos] = useState([]);
   const [cliente, setCliente] = useState('');
-  const [tipoEntrega, setTipoEntrega] = useState('Mesa');
+  const [tipoEntrega, setTipoEntrega] = useState('Mesa / Salón');
   const [destino, setDestino] = useState('');
   const [telefono, setTelefono] = useState('');
   const [carrito, setCarrito] = useState([]);
   const [pasoPedido, setPasoPedido] = useState(1);
   const [filtroBusqueda, setFiltroBusqueda] = useState('');
 
-  // Estados de control para desplegar adicionales por producto de forma independiente
+  // Estados de control para desplegar adicionales por producto
   const [mostrarAdGratis, setMostrarAdGratis] = useState({});
   const [mostrarAdPorcion, setMostrarAdPorcion] = useState({});
   const [adicionalesTemp, setAdicionalesTemp] = useState({});
@@ -84,7 +84,7 @@ export default function TerminalPedidos({ idCliente }) {
     const vueltoCalc = metodoPago === 'Efectivo' && !esCortesia ? Math.max(0, montoRec - totalCalculado) : 0.0;
     const codigoTicket = `PED-${Math.floor(100 + Math.random() * 900)}`;
 
-    // Normalización estricta del tipo de entrega para cumplir con la constraint de la BD
+    // Normalización exacta exigida por la base de datos
     const tipoEntregaNormalizado = tipoEntrega.includes('Delivery') ? 'Delivery' : 'Mesa';
 
     const payload = {
@@ -92,7 +92,7 @@ export default function TerminalPedidos({ idCliente }) {
       cliente: cliente.trim().toUpperCase(),
       tipo_entrega: tipoEntregaNormalizado,
       destino_entrega: destino.trim().toUpperCase(),
-      telefono_contacto: telefono,
+      telefono_contacto: telefono.trim(),
       items: carrito,
       metodo_pago: esCortesia ? 'Cortesía' : metodoPago,
       monto_total: totalCalculado,
@@ -138,8 +138,8 @@ export default function TerminalPedidos({ idCliente }) {
       <h2 style={{ margin: '0 0 4px 0', fontSize: '1.5rem', color: '#1e293b', fontWeight: 'bold' }}>🛒 Terminal de Pedidos</h2>
       <p style={{ margin: '0 0 20px 0', fontSize: '0.85rem', color: '#64748b' }}>Caja rápida, selección de adicionales y control de cobros.</p>
       
-      {/* IDENTIFICACIÓN Y BUSCADOR */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 1fr 1.5fr', gap: '15px', marginBottom: '20px', background: '#ffffff', padding: '18px', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+      {/* IDENTIFICACIÓN Y TIPO DE ENTREGA DINÁMICO */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 1fr 1fr 1.5fr', gap: '12px', marginBottom: '20px', background: '#ffffff', padding: '18px', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
         <div>
           <label style={labelSt}>👤 Nombre del Cliente:</label>
           <input type="text" placeholder="Ej: Juan Pérez" value={cliente} onChange={e => setCliente(e.target.value)} style={inputSt} />
@@ -147,14 +147,27 @@ export default function TerminalPedidos({ idCliente }) {
         <div>
           <label style={labelSt}>📦 Tipo de Entrega:</label>
           <select value={tipoEntrega} onChange={e => setTipoEntrega(e.target.value)} style={inputSt}>
-            <option value="Mesa">Mesa / Salón</option>
-            <option value="Delivery">Delivery / Llevar</option>
+            <option value="Mesa / Salón">Mesa / Salón</option>
+            <option value="Delivery / Llevar">Delivery / Llevar</option>
           </select>
         </div>
-        <div>
-          <label style={labelSt}>{tipoEntrega === 'Mesa' ? 'N° Mesa' : 'Dirección'}:</label>
-          <input type="text" placeholder={tipoEntrega === 'Mesa' ? 'Ej: Mesa 4' : 'Ej: Dirección'} value={destino} onChange={e => setDestino(e.target.value)} style={inputSt} />
-        </div>
+        {tipoEntrega === 'Mesa / Salón' ? (
+          <div>
+            <label style={labelSt}>N° Mesa:</label>
+            <input type="text" placeholder="Ej: Mesa 4" value={destino} onChange={e => setDestino(e.target.value)} style={inputSt} />
+          </div>
+        ) : (
+          <>
+            <div>
+              <label style={labelSt}>Dirección / Referencia:</label>
+              <input type="text" placeholder="Ej: Av. Principal 123" value={destino} onChange={e => setDestino(e.target.value)} style={inputSt} />
+            </div>
+            <div>
+              <label style={labelSt}>Teléfono de Contacto:</label>
+              <input type="text" placeholder="Ej: 999888777" value={telefono} onChange={e => setTelefono(e.target.value)} style={inputSt} />
+            </div>
+          </>
+        )}
         <div>
           <label style={labelSt}>🔍 Buscar Producto:</label>
           <input type="text" placeholder="Escribe para buscar..." value={filtroBusqueda} onChange={e => setFiltroBusqueda(e.target.value)} style={{ ...inputSt, borderColor: '#0d9488', backgroundColor: '#f0fdfa' }} />
@@ -187,7 +200,7 @@ export default function TerminalPedidos({ idCliente }) {
                       </div>
                     </div>
 
-                    {/* BOTONES DESPLEGABLES PARA ADICIONALES (SOLO SI ES PRINCIPAL) */}
+                    {/* BOTONES DESPLEGABLES DE ADICIONALES */}
                     {p.categoria === 'Principal' && (
                       <div style={{ margin: '10px 0', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                         <div style={{ display: 'flex', gap: '10px' }}>
@@ -225,7 +238,6 @@ export default function TerminalPedidos({ idCliente }) {
                       </div>
                     )}
 
-                    {/* CANTIDAD Y BOTÓN AGREGAR */}
                     <div style={{ display: 'flex', gap: '10px', marginTop: '12px', alignItems: 'center', justifyContent: 'flex-end' }}>
                       <input type="number" min="1" max="10" defaultValue={1} id={`cant-${p.id}`} style={{ width: '55px', padding: '8px', textAlign: 'center', borderRadius: '8px', border: '1px solid #cbd5e1', fontWeight: 'bold', fontSize: '0.9rem' }} />
                       <button onClick={() => {
@@ -283,7 +295,7 @@ export default function TerminalPedidos({ idCliente }) {
         <div style={{ background: '#ffffff', padding: '30px', borderRadius: '12px', border: '1px solid #e2e8f0', maxWidth: '700px', margin: '0 auto', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.05)' }}>
           <h4 style={{ margin: '0 0 16px 0', fontSize: '1.2rem', color: '#1e293b' }}>💳 Cierre y Validación del Pago</h4>
           <button onClick={() => setPasoPedido(1)} style={{ background: '#64748b', color: '#fff', border: 'none', padding: '8px 14px', borderRadius: '6px', cursor: 'pointer', marginBottom: '20px', fontWeight: '600', fontSize: '0.85rem' }}>
-            ⬅️️ Volver al Catálogo
+            ⬅️ Volver al Catálogo
           </button>
 
           <div style={{ marginBottom: '20px', backgroundColor: '#f8fafc', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
@@ -327,7 +339,7 @@ export default function TerminalPedidos({ idCliente }) {
 
           <div style={{ background: '#f1f5f9', padding: '18px', borderRadius: '8px', margin: '20px 0', border: '1px solid #e2e8f0' }}>
             <p style={{ margin: '0 0 6px 0', color: '#475569' }}><strong>Cliente:</strong> {cliente}</p>
-            <p style={{ margin: '0 0 6px 0', color: '#475569' }}><strong>Destino:</strong> {destino || 'No indicado'}</p>
+            <p style={{ margin: '0 0 6px 0', color: '#475569' }}><strong>Destino:</strong> {destino || 'No indicado'} {telefono ? `| Tel: ${telefono}` : ''}</p>
             <h3 style={{ margin: '10px 0 0 0', color: '#0d9488', fontSize: '1.4rem' }}>Total a Pagar: S/. {calcularTotal().toFixed(2)}</h3>
           </div>
 
