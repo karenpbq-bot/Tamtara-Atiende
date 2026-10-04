@@ -38,7 +38,7 @@ export default function App() {
           rol: 'admin',
           nombre: 'Administrador La Exacta',
           codigo_7d: 'EXACT',
-          id_cliente: 2 // ⬅️ Forzamos estrictamente el ID 2
+          id_cliente: 2
         };
         setUsuarioActual(datosCompletos);
         localStorage.setItem('atiende_sesion_activa', JSON.stringify(datosCompletos));
@@ -76,7 +76,7 @@ export default function App() {
         }
       }
 
-      // 4. AISLAMIENTO MULTI-TENANT ESTRICTO: Usar el id_cliente real de la BD sin comodines peligrosos
+      // 4. AISLAMIENTO MULTI-TENANT ESTRICTO
       const idClienteAsociado = perfilData.id_cliente;
 
       if (!idClienteAsociado) {
@@ -88,7 +88,7 @@ export default function App() {
         rol: perfilData.rol, 
         nombre: perfilData.nombres_apellidos,
         codigo_7d: perfilData.codigo_7d,
-        id_cliente: Number(idClienteAsociado) // 🔒 Garantizamos que sea numérico y exacto
+        id_cliente: Number(idClienteAsociado)
       };
 
       setUsuarioActual(datosCompletos);
