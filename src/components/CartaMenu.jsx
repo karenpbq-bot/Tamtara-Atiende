@@ -6,12 +6,20 @@ export default function CartaMenu({ idCliente }) {
   const [cargando, setCargando] = useState(true);
   const [mensaje, setMensaje] = useState('');
 
-  // Estados para el formulario de nuevo producto / edición
+  // Estados para nuevo producto
   const [nombre, setNombre] = useState('');
   const [descripcion, setDescripcion] = useState('');
   const [precioVenta, setPrecioVenta] = useState('');
   const [categoria, setCategoria] = useState('Principal');
   const [codigoCorto, setCodigoCorto] = useState('');
+
+  // Estados para edición en línea
+  const [editandoId, setEditandoId] = useState(null);
+  const [editNombre, setEditNombre] = useState('');
+  const [editDesc, setEditDesc] = useState('');
+  const [editPrecio, setEditPrecio] = useState('');
+  const [editCategoria, setEditCategoria] = useState('Principal');
+  const [editCodigo, setEditCodigo] = useState('');
 
   useEffect(() => {
     if (idCliente) {
@@ -49,12 +57,10 @@ export default function CartaMenu({ idCliente }) {
         precio_venta: Number(precioVenta),
         categoria: categoria,
         codigo_corto: codigoCorto.trim().toUpperCase() || null,
-        vigente: true,
-        es_combo: false
+        vigente: true
       };
 
       const { error } = await supabase.from('productos').insert([payload]);
-
       if (error) throw error;
 
       setMensaje('✅ ¡Producto agregado a la carta con éxito!');
@@ -71,10 +77,54 @@ export default function CartaMenu({ idCliente }) {
     }
   };
 
+  const iniciarEdicion = (p) => {
+    setEditandoId(p.id);
+    setEditNombre(p.nombre);
+    setEditDesc(p.descripcion || '');
+    setEditPrecio(p.precio_venta);
+    setEditCategoria(p.categoria);
+    setEditCodigo(p.codigo_corto || '');
+  };
+
+  const guardarEdicion = async (id) => {
+    try {
+      const { error } = await supabase.from('productos').update({
+        nombre: editNombre.trim(),
+        descripcion: editDesc.trim() || null,
+        precio_venta: Number(editPrecio),
+        categoria: editCategoria,
+        codigo_corto: editCodigo.trim().toUpperCase() || null
+      }).eq('id', id);
+
+      if (error) throw error;
+
+      setEditandoId(null);
+      setMensaje('✅ ¡Producto actualizado con éxito!');
+      cargarProductos();
+      setTimeout(() => setMensaje(''), 3000);
+    } catch (err) {
+      alert('Error al actualizar: ' + err.message);
+    }
+  };
+
+  const eliminarProducto = async (id) => {
+    if (!window.confirm('¿Estás seguro de eliminar este ítem de la carta?')) return;
+
+    try {
+      const { error } = await supabase.from('productos').delete().eq('id', id);
+      if (error) throw error;
+      setMensaje('🗑️ Producto eliminado correctamente.');
+      cargarProductos();
+      setTimeout(() => setMensaje(''), 3000);
+    } catch (err) {
+      alert('Error al eliminar: ' + err.message);
+    }
+  };
+
   return (
     <div style={estilos.contenedor}>
       <h3 style={estilos.subSubTitulo}>Gestión de Carta y Menú</h3>
-      <p style={estilos.textoInstruccion}>Agrega y administra los platos, bebidas, aditivos gratis y porciones adicionales disponibles para tu local.</p>
+      <p style={estilos.textoInstruccion}>Agrega, edita y administra los platos, bebidas, aditivos gratis y porciones adicionales de tu local.</p>
 
       {mensaje && <p style={estilos.mensajeFeedback}>{mensaje}</p>}
 
@@ -149,7 +199,7 @@ export default function CartaMenu({ idCliente }) {
           </button>
         </form>
 
-        {/* Listado de Productos Actuales */}
+        {/* Listado de Productos Actuales con Opción de Edición y Borrado */}
         <div style={estilos.listaContainer}>
           <h4 style={estilos.tituloForm}>Productos Registrados ({productos.length})</h4>
           
@@ -161,12 +211,69 @@ export default function CartaMenu({ idCliente }) {
             <div style={estilos.gridProductos}>
               {productos.map(p => (
                 <div key={p.id} style={estilos.cardProducto}>
-                  <div style={estilos.cardHeader}>
-                    <span style={estilos.badgeCategoria}>{p.categoria}</span>
-                    <span style={estilos.precioProducto}>S/. {Number(p.precio_venta).toFixed(2)}</span>
-                  </div>
-                  <h5 style={estilos.nombreProducto}>{p.nombre}</h5>
-                  <p style={estilos.descProducto}>{p.descripcion || 'Sin descripción.'}</p>
+                  {editandoId === p.id ? (
+                    /* FORMULARIO DE EDICIÓN EN LÍNEA */
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <input 
+                        type="text" 
+                        value={editNombre} 
+                        onChange={e => setEditNombre(e.target.value)} 
+                        style={estilos.input} 
+                        placeholder="Nombre"
+                      />
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <input 
+                          type="number" 
+                          step="0.50" 
+                          value={editPrecio} 
+                          onChange={e => setEditPrecio(e.target.value)} 
+                          style={{ ...estilos.input, flex: 1 }} 
+                          placeholder="Precio"
+                        />
+                        <input 
+                          type="text" 
+                          value={editCodigo} 
+                          onChange={e => setEditCodigo(e.target.value)} 
+                          style={{ ...estilos.input, flex: 1 }} 
+                          placeholder="Código"
+                        />
+                        <select 
+                          value={editCategoria} 
+                          onChange={e => setEditCategoria(e.target.value)} 
+                          style={{ ...estilos.input, flex: 1.2 }}
+                        >
+                          <option value="Principal">Principal</option>
+                          <option value="Bebidas">Bebidas</option>
+                          <option value="Ad Gratis">Ad Gratis</option>
+                          <option value="Ad Porción">Ad Porción</option>
+                        </select>
+                      </div>
+                      <textarea 
+                        value={editDesc} 
+                        onChange={e => setEditDesc(e.target.value)} 
+                        style={{ ...estilos.textarea, minHeight: '50px' }} 
+                        placeholder="Descripción"
+                      />
+                      <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+                        <button onClick={() => guardarEdicion(p.id)} style={{ background: '#10b981', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.8rem' }}>💾 Guardar</button>
+                        <button onClick={() => setEditandoId(null)} style={{ background: '#64748b', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.8rem' }}>❌ Cancelar</button>
+                      </div>
+                    </div>
+                  ) : (
+                    /* VISTA NORMAL DE LA TARJETA */
+                    <div>
+                      <div style={estilos.cardHeader}>
+                        <span style={estilos.badgeCategoria}>{p.categoria}</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                          <span style={estilos.precioProducto}>S/. {Number(p.precio_venta).toFixed(2)}</span>
+                          <button onClick={() => iniciarEdicion(p)} style={estilos.btnEditar} title="Editar producto">✏️</button>
+                          <button onClick={() => eliminarProducto(p.id)} style={estilos.btnBorrar} title="Eliminar producto">🗑️</button>
+                        </div>
+                      </div>
+                      <h5 style={estilos.nombreProducto}>{p.nombre} {p.codigo_corto ? `[${p.codigo_corto}]` : ''}</h5>
+                      <p style={estilos.descProducto}>{p.descripcion || 'Sin descripción.'}</p>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -194,11 +301,13 @@ const estilos = {
   
   listaContainer: { backgroundColor: '#FFF', padding: '15px', borderRadius: '8px', border: '1px solid #E2E8F0', minHeight: '300px' },
   textoVacio: { fontSize: '0.8rem', color: '#64748B', textAlign: 'center', padding: '30px' },
-  gridProductos: { display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '400px', overflowY: 'auto' },
-  cardProducto: { backgroundColor: '#FAFAFA', padding: '10px', borderRadius: '6px', border: '1px solid #E2E8F0' },
+  gridProductos: { display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '500px', overflowY: 'auto' },
+  cardProducto: { backgroundColor: '#FAFAFA', padding: '12px', borderRadius: '6px', border: '1px solid #E2E8F0' },
   cardHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' },
   badgeCategoria: { backgroundColor: '#E0F2F1', color: '#00796B', padding: '2px 6px', borderRadius: '4px', fontSize: '0.65rem', fontWeight: 'bold' },
-  precioProducto: { fontSize: '0.85rem', fontWeight: 'bold', color: '#1E293B' },
+  precioProducto: { fontSize: '0.9rem', fontWeight: 'bold', color: '#1E293B' },
   nombreProducto: { fontSize: '0.9rem', color: '#0F172A', margin: '0 0 2px 0', fontWeight: 'bold' },
-  descProducto: { fontSize: '0.75rem', color: '#64748B', margin: 0 }
+  descProducto: { fontSize: '0.75rem', color: '#64748B', margin: 0 },
+  btnEditar: { background: '#e0e7ff', border: 'none', color: '#4338ca', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 'bold' },
+  btnBorrar: { background: '#fee2e2', border: 'none', color: '#ef4444', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 'bold' }
 };
