@@ -66,9 +66,10 @@ export default function TrackingKanban({ idCliente }) {
   const pedidosEnProceso = pedidos.filter(p => p.pedido_cerrado !== 'Sí');
   const pedidosCerrados = pedidos.filter(p => p.pedido_cerrado === 'Sí');
 
-  const enCocina = pedidosEnProceso.filter(p => p.estado === 'En cocina' || p.estado === 'Pendiente');
-  const enBarra = pedidosEnProceso.filter(p => p.estado === 'Listo en barra');
-  const enCamino = pedidosEnProceso.filter(p => p.estado === 'En camino');
+  // Mapeo adaptado a los estados permitidos por la base de datos
+  const enCocina = pedidosEnProceso.filter(p => p.estado === 'En cocina' || p.estado === 'Pendiente' || p.estado === 'En Cocina');
+  const enBarra = pedidosEnProceso.filter(p => p.estado === 'Listo en barra' || p.estado === 'Listo');
+  const enCamino = pedidosEnProceso.filter(p => p.estado === 'En camino' || p.estado === 'En Camino');
   const entregados = pedidosEnProceso.filter(p => p.estado === 'Entregado');
 
   return (
@@ -98,7 +99,7 @@ export default function TrackingKanban({ idCliente }) {
       {/* KANBAN DE 4 COLUMNAS */}
       {pestanaActiva === 'proceso' && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '15px', alignItems: 'start' }}>
-          <ColumnaKanban titulo="👨‍🍳 En Cocina" items={enCocina} colorHeader="#f59e0b" onAvanzar={id => cambiarEstado(id, 'Listo en barra')} onVerDetalle={setPedidoSeleccionado} />
+          <ColumnaKanban titulo="👨‍🍳 En Cocina" items={enCocina} colorHeader="#f59e0b" onAvanzar={id => cambiarEstado(id, 'Listo')} onVerDetalle={setPedidoSeleccionado} />
           <ColumnaKanban titulo="🔔 Listo en Barra" items={enBarra} colorHeader="#3b82f6" onAvanzar={id => cambiarEstado(id, 'En camino')} onVerDetalle={setPedidoSeleccionado} />
           <ColumnaKanban titulo="🛵 En Camino (Delivery)" items={enCamino} colorHeader="#8b5cf6" onAvanzar={id => cambiarEstado(id, 'Entregado')} onVerDetalle={setPedidoSeleccionado} />
           <ColumnaKanban titulo="✅ Entregados" items={entregados} colorHeader="#10b981" onCerrar={cerrarPedido} onVerDetalle={setPedidoSeleccionado} />
