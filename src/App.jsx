@@ -31,14 +31,14 @@ export default function App() {
     try {
       const emailLimpio = email.trim().toLowerCase();
 
-      // 1. ACCESO DIRECTO INMEDIATO PARA LA EXACTA (Evita bloqueos de la tabla)
+      // 1. ACCESO DIRECTO INMEDIATO PARA LA EXACTA
       if (emailLimpio === 'laexacta2807@gmail.com') {
         const datosCompletos = {
           correo: emailLimpio,
           rol: 'admin',
           nombre: 'Administrador La Exacta',
           codigo_7d: 'EXACT',
-          id_cliente: 2 // ⬅️ Forzamos directamente el ID 2 de La Exacta
+          id_cliente: 2 // ⬅️ Forzamos estrictamente el ID 2
         };
         setUsuarioActual(datosCompletos);
         localStorage.setItem('atiende_sesion_activa', JSON.stringify(datosCompletos));
@@ -46,18 +46,14 @@ export default function App() {
         return;
       }
 
-      let perfilData = null;
-
-      // 2. Intentar consultar el usuario en la tabla 'uni_usuarios' para los demás
-      const { data } = await supabase
+      // 2. Consultar el usuario en la tabla 'uni_usuarios' para los demás
+      const { data: perfilData, error } = await supabase
         .from('uni_usuarios')
         .select('*')
         .eq('correo', emailLimpio)
         .maybeSingle();
 
-      perfilData = data;
-
-      if (!perfilData) {
+      if (error || !perfilData) {
         throw new Error("Usuario no registrado en la base de datos.");
       }
 
@@ -80,17 +76,19 @@ export default function App() {
         }
       }
 
-      // 4. Determinar el id_cliente asociado
-      const idClienteAsociado = (email.toLowerCase().includes('laexacta') || perfilData.rol === 'superadmin') 
-        ? 2 
-        : (perfilData.id_cliente || 2);
+      // 4. AISLAMIENTO MULTI-TENANT ESTRICTO: Usar el id_cliente real de la BD sin comodines peligrosos
+      const idClienteAsociado = perfilData.id_cliente;
+
+      if (!idClienteAsociado) {
+        throw new Error("El usuario no tiene un ID de cliente asignado en la base de datos.");
+      }
 
       const datosCompletos = {
         correo: email,
         rol: perfilData.rol, 
         nombre: perfilData.nombres_apellidos,
         codigo_7d: perfilData.codigo_7d,
-        id_cliente: idClienteAsociado
+        id_cliente: Number(idClienteAsociado) // 🔒 Garantizamos que sea numérico y exacto
       };
 
       setUsuarioActual(datosCompletos);
@@ -118,7 +116,7 @@ export default function App() {
       case 'terminal':
         return <TerminalPedidos idCliente={usuarioActual?.id_cliente} />;
       case 'kanban':
-        return <TrackingKanban idCliente={usuarioActual?.id_cliente} />;
+        return <TrackingKanban idCliente={usuarioActual?.id_cliente} usuarioData={usuarioActual} />;
       case 'carta':
         return <CartaMenu idCliente={usuarioActual?.id_cliente} />;
       case 'kardex':
