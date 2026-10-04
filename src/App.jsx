@@ -2,8 +2,11 @@ import React, { useState, useEffect } from 'react';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Sidebar from './components/Sidebar';
-import { AdminClientes } from './AdminClientes'; // <--- Nuevo componente importado
-import CartaMenu from './components/CartaMenu'; // O './CartaMenu' según tu estructura
+import { AdminClientes } from './AdminClientes';
+import CartaMenu from './components/CartaMenu';
+import TerminalPedidos from './components/TerminalPedidos';
+import KardexInventarios from './components/KardexInventarios';
+import TrackingKanban from './components/TrackingKanban';
 import { supabase } from './supabase'; 
 
 export default function App() {
@@ -44,26 +47,39 @@ export default function App() {
 
       // 3. Validar contraseña según el rol
       if (perfilData.rol === 'superadmin') {
-        // El superadmin utiliza el sistema oficial de Supabase Auth
         const { error: authError } = await supabase.auth.signInWithPassword({
           email: email,
           password: password,
         });
         if (authError) throw authError;
       } else {
-        // Los administradores de clientes y personal validan contra su password_hash guardado en la tabla
         if (perfilData.password_hash !== password) {
           alert('Error al iniciar sesión: Credenciales incorrectas.');
           return;
         }
       }
 
-      // 4. Guardar la sesión activa con su respectivo código de aislamiento
+      // 4. Obtener el id_cliente asociado al código del usuario (si no es superadmin)
+      let idClienteAsociado = null;
+      if (perfilData.codigo_7d) {
+        const { data: clienteData } = await supabase
+          .from('uni_clientes')
+          .select('id_cliente')
+          .eq('codigo_invitacion_5d', perfilData.codigo_7d)
+          .single();
+        
+        if (clienteData) {
+          idClienteAsociado = clienteData.id_cliente;
+        }
+      }
+
+      // 5. Guardar la sesión activa con su respectivo id_cliente y código de aislamiento
       const datosCompletos = {
         correo: email,
         rol: perfilData.rol, 
         nombre: perfilData.nombres_apellidos,
-        codigo_7d: perfilData.codigo_7d
+        codigo_7d: perfilData.codigo_7d,
+        id_cliente: idClienteAsociado
       };
 
       setUsuarioActual(datosCompletos);
@@ -82,20 +98,20 @@ export default function App() {
     localStorage.removeItem('atiende_sesion_activa');
   };
 
- const renderizarModulo = () => {
+  const renderizarModulo = () => {
     switch (moduloActivo) {
       case 'dashboard':
         return <Dashboard usuarioData={usuarioActual} />;
       case 'admin_clientes':
         return <AdminClientes />;
       case 'terminal':
-        return <h2>Módulo: Terminal de Pedidos (En construcción)</h2>;
+        return <TerminalPedidos idCliente={usuarioActual?.id_cliente} />;
       case 'kanban':
-        return <h2>Módulo: Tracking de Comandas (En construcción)</h2>;
+        return <TrackingKanban idCliente={usuarioActual?.id_cliente} />;
       case 'carta':
-        return <CartaMenu idCliente={usuarioActual?.id_cliente} />; // <--- Aquí conectamos el componente real
+        return <CartaMenu idCliente={usuarioActual?.id_cliente} />;
       case 'kardex':
-        return <h2>Módulo: Kardex e Inventarios (En construcción)</h2>;
+        return <KardexInventarios idCliente={usuarioActual?.id_cliente} />;
       case 'recetas':
         return <h2>Módulo: Recetas y Costos (En construcción)</h2>;
       default:
