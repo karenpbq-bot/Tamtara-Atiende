@@ -69,8 +69,8 @@ export default function TrackingKanban({ idCliente, usuarioData }) {
   const pedidosEnProceso = pedidosFiltrados.filter(p => p.pedido_cerrado !== 'Sí');
   const pedidosCerrados = pedidosFiltrados.filter(p => p.pedido_cerrado === 'Sí');
 
-  // Mapeo exacto con los estados válidos de la base de datos
-  const enCocina = pedidosEnProceso.filter(p => p.estado === 'Pendiente' || p.estado === 'En Cocina' || p.estado === 'En cocina');
+  // Mapeo exacto con los 4 estados autorizados por el check_estado de Supabase
+  const enCocina = pedidosEnProceso.filter(p => p.estado === 'En cocina' || p.estado === 'Pendiente' || p.estado === 'En Cocina');
   const enBarra = pedidosEnProceso.filter(p => p.estado === 'Listo');
   const enCamino = pedidosEnProceso.filter(p => p.estado === 'Despachado');
   const entregados = pedidosEnProceso.filter(p => p.estado === 'Entregado');
@@ -127,7 +127,7 @@ export default function TrackingKanban({ idCliente, usuarioData }) {
             onRetroceder={p => actualizarEstadoPedido(p.id, 'En cocina')}
             onAvanzar={p => {
               const esDelivery = p.tipo_entrega && p.tipo_entrega.toLowerCase().includes('delivery');
-              // 🔒 USO DE "Despachado" SI ES DELIVERY, O "Entregado" SI ES MESA
+              // 🔒 Si es Delivery va a 'Despachado', si es Salón/Mesa salta directo a 'Entregado'
               actualizarEstadoPedido(p.id, esDelivery ? 'Despachado' : 'Entregado');
             }} 
             onVerDetalle={setPedidoSeleccionado} 
@@ -146,7 +146,7 @@ export default function TrackingKanban({ idCliente, usuarioData }) {
             colorHeader="#10b981" 
             onRetroceder={p => {
               const esDelivery = p.tipo_entrega && p.tipo_entrega.toLowerCase().includes('delivery');
-              // 🔒 RETROCESO CORRECTO SEGÚN TIPO DE ENTREGA
+              // 🔒 Al retroceder, si es delivery regresa a 'Despachado', si es mesa regresa a 'Listo'
               actualizarEstadoPedido(p.id, esDelivery ? 'Despachado' : 'Listo');
             }}
             onCerrar={p => actualizarEstadoPedido(p.id, 'Entregado', 'Sí')} 
