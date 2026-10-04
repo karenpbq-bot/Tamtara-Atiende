@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabase';
 
 export default function TrackingKanban({ idCliente, usuarioData }) {
-  // Identificador de cliente seguro y unificado
   const clienteIdFinal = idCliente || usuarioData?.id_cliente;
 
   const [pestanaActiva, setPestanaActiva] = useState('proceso'); // 'proceso', 'cerrados'
@@ -25,7 +24,6 @@ export default function TrackingKanban({ idCliente, usuarioData }) {
         return;
       }
 
-      // 🔒 FILTRO MULTI-TENANT ESTRICTO POR ID_CLIENTE
       const { data, error } = await supabase
         .from('pedidos')
         .select('*')
@@ -41,11 +39,15 @@ export default function TrackingKanban({ idCliente, usuarioData }) {
     }
   };
 
-  const cambiarEstado = async (id, nuevoEstado) => {
+  // Función general para actualizar estado respetando restricciones de Supabase
+  const actualizarEstadoPedido = async (id, nuevoEstado, pedidoCerradoValor = 'No') => {
     try {
       const { error } = await supabase
         .from('pedidos')
-        .update({ estado: nuevoEstado })
+        .update({ 
+          estado: nuevoEstado, 
+          pedido_cerrado: pedidoCerradoValor 
+        })
         .eq('id', id)
         .eq('id_cliente', Number(clienteIdFinal));
 
@@ -53,21 +55,6 @@ export default function TrackingKanban({ idCliente, usuarioData }) {
       cargarPedidos();
     } catch (err) {
       alert('Error al actualizar estado: ' + err.message);
-    }
-  };
-
-  const cerrarPedido = async (id) => {
-    try {
-      const { error } = await supabase
-        .from('pedidos')
-        .update({ pedido_cerrado: 'Sí', estado: 'Entregado' })
-        .eq('id', id)
-        .eq('id_cliente', Number(clienteIdFinal));
-
-      if (error) throw error;
-      cargarPedidos();
-    } catch (err) {
-      alert('Error al cerrar pedido: ' + err.message);
     }
   };
 
@@ -113,7 +100,7 @@ export default function TrackingKanban({ idCliente, usuarioData }) {
         </button>
       </div>
 
-      {/* BARRA DE BÚSQUEDA RÁPIDA (IDÉNTICA A STREAMLIT) */}
+      {/* BARRA DE BÚSQUEDA RÁPIDA */}
       <div style={{ marginBottom: '20px' }}>
         <input 
           type="text" 
@@ -124,30 +111,63 @@ export default function TrackingKanban({ idCliente, usuarioData }) {
         />
       </div>
 
-      {/* KANBAN DE 4 COLUMNAS */}
+      {/* KANBAN DE 4 COLUMNAS CON BOTONES BIDIRECCIONALES */}
       {pestanaActiva === 'proceso' && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '15px', alignItems: 'start' }}>
-          <ColumnaKanban titulo="👨‍🍳 En Cocina" items={enCocina} colorHeader="#f59e0b" onAvanzar={id => cambiarEstado(id, 'Listo')} onVerDetalle={setPedidoSeleccionado} />
-          <ColumnaKanban titulo="🔔 Listo en Barra" items={enBarra} colorHeader="#3b82f6" onAvanzar={id => cambiarEstado(id, 'En camino')} onVerDetalle={setPedidoSeleccionado} />
-          <ColumnaKanban titulo="🛵 En Camino (Delivery)" items={enCamino} colorHeader="#8b5cf6" onAvanzar={id => cambiarEstado(id, 'Entregado')} onVerDetalle={setPedidoSeleccionado} />
-          <ColumnaKanban titulo="✅ Entregados" items={entregados} colorHeader="#10b981" onCerrar={cerrarPedido} onVerDetalle={setPedidoSeleccionado} />
+          <ColumnaKanban 
+            titulo="👨‍🍳 En Cocina" 
+            items={enCocina} 
+            colorHeader="#f59e0b" 
+            onAvanzar={id => actualizarEstadoPedido(id, 'Listo en barra')} 
+            onVerDetalle={setPedidoSeleccionado} 
+          />
+          <ColumnaKanban 
+            titulo="🔔 Listo en Barra" 
+            items={enBarra} 
+            colorHeader="#3b82f6" 
+            onRetroceder={id => actualizarEstadoPedido(id, 'En cocina')}
+            onAvanzar={id => actualizarEstadoPedido(id, 'En camino')} 
+            onVerDetalle={setPedidoSeleccionado} 
+          />
+          <ColumnaKanban 
+            titulo="🛵 En Camino" 
+            items={enCamino} 
+            colorHeader="#8b5cf6" 
+            onRetroceder={id => actualizarEstadoPedido(id, 'Listo en barra')}
+            onAvanzar={id => actualizarEstadoPedido(id, 'Entregado')} 
+            onVerDetalle={setPedidoSeleccionado} 
+          />
+          <ColumnaKanban 
+            titulo="✅ Entregados" 
+            items={entregados} 
+            colorHeader="#10b981" 
+            onRetroceder={id => actualizarEstadoPedido(id, 'En camino')}
+            onCerrar={id => actualizarEstadoPedido(id, 'Entregado', 'Sí')} 
+            onVerDetalle={setPedidoSeleccionado} 
+          />
         </div>
       )}
 
-      {/* PESTAÑA DE PEDIDOS CERRADOS */}
+      {/* PESTAÑA DE PEDIDOS CERRADOS (CON OPCIÓN DE REACTIVAR/RETROCEDER) */}
       {pestanaActiva === 'cerrados' && (
         <div style={{ background: '#fff', padding: '20px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-          <h4 style={{ margin: '0 0 15px 0', color: '#1e293b' }}>📦 Historial de Pedidos Cerrados</h4>
+          <h4 style={{ margin: '0 0 15px 0', color: '#1e293b' }}>📦 Historial de Pedidos Cerrados (Haz clic para reactivar o ver detalle)</h4>
           {pedidosCerrados.length === 0 ? <p style={{ color: '#94a3b8' }}>No hay pedidos cerrados registrados.</p> : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {pedidosCerrados.map(p => (
-                <div key={p.id} onClick={() => setPedidoSeleccionado(p)} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0', cursor: 'pointer' }}>
-                  <div>
+                <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                  <div onClick={() => setPedidoSeleccionado(p)} style={{ cursor: 'pointer', flex: 1 }}>
                     <strong>{p.codigo_exacta}</strong> • {p.cliente} ({p.tipo_entrega}) {p.destino_entrega ? `- ${p.destino_entrega}` : ''}
                   </div>
-                  <div>
-                    <span style={{ fontWeight: 'bold', color: '#0d9488', marginRight: '15px' }}>S/. {Number(p.monto_total).toFixed(2)}</span>
-                    <span style={{ fontSize: '0.8rem', background: '#e2e8f0', padding: '2px 6px', borderRadius: '4px' }}>{p.metodo_pago}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                    <span style={{ fontWeight: 'bold', color: '#0d9488' }}>S/. {Number(p.monto_total).toFixed(2)}</span>
+                    <button 
+                      onClick={() => actualizarEstadoPedido(p.id, 'Entregado', 'No')}
+                      style={{ background: '#f59e0b', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 'bold', cursor: 'pointer' }}
+                      title="Regresar a Pedidos en Proceso"
+                    >
+                      ⬅️ Reabrir Pedido
+                    </button>
                   </div>
                 </div>
               ))}
@@ -156,7 +176,7 @@ export default function TrackingKanban({ idCliente, usuarioData }) {
         </div>
       )}
 
-      {/* MODAL DE DETALLE DE VENTA (VENTANA EMERGENTE) */}
+      {/* MODAL DE DETALLE DE VENTA */}
       {pedidoSeleccionado && (
         <div style={modalOverlaySt}>
           <div style={modalContentSt}>
@@ -196,7 +216,7 @@ export default function TrackingKanban({ idCliente, usuarioData }) {
   );
 }
 
-function ColumnaKanban({ titulo, items, colorHeader, onAvanzar, onCerrar, onVerDetalle }) {
+function ColumnaKanban({ titulo, items, colorHeader, onRetroceder, onAvanzar, onCerrar, onVerDetalle }) {
   return (
     <div style={{ background: '#ffffff', borderRadius: '12px', border: '1px solid #e2e8f0', overflow: 'hidden', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
       <div style={{ backgroundColor: colorHeader, color: '#fff', padding: '10px 14px', fontWeight: 'bold', fontSize: '0.95rem', textAlign: 'center' }}>
@@ -214,7 +234,7 @@ function ColumnaKanban({ titulo, items, colorHeader, onAvanzar, onCerrar, onVerD
                   padding: '12px', 
                   borderRadius: '8px', 
                   border: '1px solid #e2e8f0', 
-                  borderLeft: esPendiente ? '5px solid #f97316' : '1px solid #e2e8f0', // Línea naranja/roja para pendientes
+                  borderLeft: esPendiente ? '5px solid #f97316' : '1px solid #e2e8f0', 
                   boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
                 }}
               >
@@ -226,7 +246,6 @@ function ColumnaKanban({ titulo, items, colorHeader, onAvanzar, onCerrar, onVerD
                   <p style={{ margin: '0 0 4px 0', fontSize: '0.85rem', color: '#334155', fontWeight: '600' }}>{p.cliente}</p>
                   {p.destino_entrega && <p style={{ margin: '0 0 6px 0', fontSize: '0.75rem', color: '#64748b' }}>📍 {p.destino_entrega}</p>}
                   
-                  {/* Detalle de productos principales en la tarjeta */}
                   <div style={{ fontSize: '0.75rem', color: '#475569', background: '#f8fafc', padding: '4px 6px', borderRadius: '4px', marginBottom: '6px' }}>
                     {p.items && p.items.map(i => `${i.cantidad}x ${i.nombre}`).join(', ')}
                   </div>
@@ -234,7 +253,13 @@ function ColumnaKanban({ titulo, items, colorHeader, onAvanzar, onCerrar, onVerD
                   <p style={{ margin: '0', fontSize: '0.75rem', color: '#0d9488', fontWeight: 'bold' }}>Total: S/. {Number(p.monto_total).toFixed(2)} {esPendiente ? '🔴 [Pendiente]' : ''}</p>
                 </div>
 
+                {/* BOTONES BIDIRECCIONALES (RETROCEDER Y AVANZAR) */}
                 <div style={{ display: 'flex', gap: '6px', marginTop: '10px', borderTop: '1px solid #f1f5f9', paddingTop: '8px' }}>
+                  {onRetroceder && (
+                    <button onClick={() => onRetroceder(p.id)} style={{ background: '#e2e8f0', color: '#334155', border: 'none', padding: '6px 8px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 'bold', cursor: 'pointer' }} title="Retroceder estado">
+                      ⬅️
+                    </button>
+                  )}
                   {onAvanzar && (
                     <button onClick={() => onAvanzar(p.id)} style={{ flex: 1, background: '#0d9488', color: '#fff', border: 'none', padding: '6px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 'bold', cursor: 'pointer' }}>
                       Avanzar ➔
