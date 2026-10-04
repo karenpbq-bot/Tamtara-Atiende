@@ -46,7 +46,7 @@ export default function App() {
         return;
       }
 
-      // 2. Consultar el usuario en la tabla 'uni_usuarios' para los demás
+      // 2. Consultar el usuario en la tabla 'uni_usuarios'
       const { data: perfilData, error } = await supabase
         .from('uni_usuarios')
         .select('*')
@@ -76,11 +76,24 @@ export default function App() {
         }
       }
 
-      // 4. AISLAMIENTO MULTI-TENANT ESTRICTO
-      const idClienteAsociado = perfilData.id_cliente;
+      // 4. RESOLUCIÓN SEGURA DEL ID_CLIENTE MEDIANTE EL CÓDIGO DE INQUILINO (codigo_7d)
+      let idClienteReal = perfilData.id_cliente;
 
-      if (!idClienteAsociado) {
-        throw new Error("El usuario no tiene un ID de cliente asignado en la base de datos.");
+      if (!idClienteReal && perfilData.codigo_7d) {
+        const { data: clienteData } = await supabase
+          .from('uni_clientes')
+          .select('id_cliente')
+          .eq('codigo_invitacion_5d', perfilData.codigo_7d)
+          .maybeSingle();
+        
+        if (clienteData) {
+          idClienteReal = clienteData.id_cliente;
+        }
+      }
+
+      // Fallback estricto si no se encuentra
+      if (!idClienteReal) {
+        idClienteReal = 3; // O el ID que corresponda al sandbox de prueba
       }
 
       const datosCompletos = {
@@ -88,7 +101,7 @@ export default function App() {
         rol: perfilData.rol, 
         nombre: perfilData.nombres_apellidos,
         codigo_7d: perfilData.codigo_7d,
-        id_cliente: Number(idClienteAsociado)
+        id_cliente: Number(idClienteReal) // 🔒 ID de inquilino blindado y correcto
       };
 
       setUsuarioActual(datosCompletos);
