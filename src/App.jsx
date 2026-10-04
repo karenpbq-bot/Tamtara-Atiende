@@ -29,19 +29,38 @@ export default function App() {
 
   const manejarLogin = async (email, password) => {
     try {
+      const emailLimpio = email.trim().toLowerCase();
+
+      // 1. ACCESO DIRECTO INMEDIATO PARA LA EXACTA (Evita bloqueos de la tabla)
+      if (emailLimpio === 'laexacta2807@gmail.com') {
+        const datosCompletos = {
+          correo: emailLimpio,
+          rol: 'admin',
+          nombre: 'Administrador La Exacta',
+          codigo_7d: 'EXACT',
+          id_cliente: 2 // ⬅️ Forzamos directamente el ID 2 de La Exacta
+        };
+        setUsuarioActual(datosCompletos);
+        localStorage.setItem('atiende_sesion_activa', JSON.stringify(datosCompletos));
+        setModuloActivo('dashboard');
+        return;
+      }
+
       let perfilData = null;
 
-      // 1. Intentar consultar el usuario en la tabla 'uni_usuarios'
+      // 2. Intentar consultar el usuario en la tabla 'uni_usuarios' para los demás
       const { data } = await supabase
         .from('uni_usuarios')
         .select('*')
-        .eq('correo', email.trim().toLowerCase())
+        .eq('correo', emailLimpio)
         .maybeSingle();
 
       perfilData = data;
 
-      // 2. ACCESO DIRECTO DE EMERGENCIA PARA LA EXACTA O SUPERADMIN
-      if (!perfilData && email.toLowerCase() === 'laexacta2807@gmail.com') {
+      if (!perfilData) {
+        throw new Error("Usuario no registrado en la base de datos.");
+      }
+...
         const datosCompletos = {
           correo: email,
           rol: 'admin',
