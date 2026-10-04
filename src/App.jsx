@@ -59,10 +59,10 @@ export default function App() {
         }
       }
 
-      // 4. Obtener el id_cliente asociado
+      // 4. Obtener el id_cliente asociado de forma segura
       let idClienteAsociado = null;
-      if (perfilData.correo === 'laexacta2807@gmail.com' || perfilData.rol === 'superadmin') {
-        idClienteAsociado = 2; // Forzamos directamente el id_cliente 2 para La Exacta o superadmin maestro
+      if (email === 'laexacta2807@gmail.com' || perfilData.rol === 'superadmin') {
+        idClienteAsociado = 2; // Forzamos el ID 2 vinculado a La Exacta
       } else if (perfilData.codigo_7d) {
         const { data: clienteData } = await supabase
           .from('uni_clientes')
@@ -75,21 +75,13 @@ export default function App() {
         }
       }
 
+      // 5. Guardar la sesión activa con su respectivo id_cliente
       const datosCompletos = {
         correo: email,
         rol: perfilData.rol, 
         nombre: perfilData.nombres_apellidos,
         codigo_7d: perfilData.codigo_7d,
-        id_cliente: idClienteAsociado // <--- Asegura que aquí viaja el 2
-      };
-
-      // 5. Guardar la sesión activa con su respectivo id_cliente y código de aislamiento
-      const datosCompletos = {
-        correo: email,
-        rol: perfilData.rol, 
-        nombre: perfilData.nombres_apellidos,
-        codigo_7d: perfilData.codigo_7d,
-        id_cliente: idClienteAsociado
+        id_cliente: idClienteAsociado // <--- Aquí viaja el ID 2 para filtrar los datos
       };
 
       setUsuarioActual(datosCompletos);
