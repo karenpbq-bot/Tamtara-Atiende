@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../clientes';
+import CartaMenu from '../components/CartaMenu';
 
 // Subcomponente modular: Bloque tipo acordeón (Desplegable)
 const BloqueDesplegable = ({ titulo, isOpen, onClick, children }) => {
@@ -143,9 +144,7 @@ export default function Dashboard({ usuarioData, onCerrarSesion }) {
             isOpen={bloqueAbierto === 3} 
             onClick={() => alternarBloque(3)}
           >
-            <div style={estilos.placeholderMascara}>
-              <p>Administración de platos, bebidas y precios se integrará aquí.</p>
-            </div>
+            <CartaMenu idCliente={idCliente} />
           </BloqueDesplegable>
 
           {/* Bloque 4: Kardex e Inventario */}
