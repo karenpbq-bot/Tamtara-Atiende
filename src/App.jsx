@@ -45,7 +45,7 @@ export default function App() {
         return;
       }
 
-      // 3. Validar contraseña (compatible con superadmin o contraseña directa en la tabla)
+      // 3. Validar contraseña
       if (perfilData.rol === 'superadmin') {
         const { error: authError } = await supabase.auth.signInWithPassword({
           email: email,
@@ -59,29 +59,16 @@ export default function App() {
         }
       }
 
-      // 4. Buscar el id_cliente vinculado mediante su código de 5 dígitos (o asignar 2 por defecto si es La Exacta)
-      let idClienteAsociado = null;
-      if (email.toLowerCase().includes('laexacta') || perfilData.rol === 'superadmin') {
-        idClienteAsociado = 2; // Forzamos el ID 2 para La Exacta
-      } else if (perfilData.codigo_7d) {
-        const { data: clienteData } = await supabase
-          .from('uni_clientes')
-          .select('id_cliente')
-          .eq('codigo_invitacion_5d', perfilData.codigo_7d)
-          .single();
-        
-        if (clienteData) {
-          idClienteAsociado = clienteData.id_cliente;
-        }
-      }
+      // 4. Asignación directa del id_cliente (2 para La Exacta)
+      const idClienteAsociado = (email.toLowerCase().includes('laexacta') || perfilData.rol === 'superadmin') ? 2 : (perfilData.id_cliente || 2);
 
-      // 5. Guardar la sesión con el id_cliente correcto
+      // 5. Consolidar la sesión activa
       const datosCompletos = {
         correo: email,
         rol: perfilData.rol, 
         nombre: perfilData.nombres_apellidos,
         codigo_7d: perfilData.codigo_7d,
-        id_cliente: idClienteAsociado || 2 // Respaldo por seguridad para que nunca sea null
+        id_cliente: idClienteAsociado
       };
 
       setUsuarioActual(datosCompletos);
