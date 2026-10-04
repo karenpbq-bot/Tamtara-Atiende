@@ -69,10 +69,9 @@ export default function TrackingKanban({ idCliente, usuarioData }) {
   const pedidosEnProceso = pedidosFiltrados.filter(p => p.pedido_cerrado !== 'Sí');
   const pedidosCerrados = pedidosFiltrados.filter(p => p.pedido_cerrado === 'Sí');
 
-  // Clasificación de estados en las 4 columnas del Kanban
   const enCocina = pedidosEnProceso.filter(p => p.estado === 'Pendiente' || p.estado === 'En Cocina' || p.estado === 'En cocina');
   const enBarra = pedidosEnProceso.filter(p => p.estado === 'Listo');
-  const enCamino = pedidosEnProceso.filter(p => p.estado === 'En Camino' || p.estado === 'En camino');
+  const enCamino = pedidosEnProceso.filter(p => p.estado === 'En camino' || p.estado === 'En Camino');
   const entregados = pedidosEnProceso.filter(p => p.estado === 'Entregado');
 
   return (
@@ -114,7 +113,7 @@ export default function TrackingKanban({ idCliente, usuarioData }) {
       {pestanaActiva === 'proceso' && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '15px', alignItems: 'start' }}>
           <ColumnaKanban 
-            titulo="👨‍🍳 En Cocina" 
+            titulo="👨‍‍🍳 En Cocina" 
             items={enCocina} 
             colorHeader="#f59e0b" 
             onAvanzar={p => actualizarEstadoPedido(p.id, 'Listo')} 
@@ -126,9 +125,8 @@ export default function TrackingKanban({ idCliente, usuarioData }) {
             colorHeader="#3b82f6" 
             onRetroceder={p => actualizarEstadoPedido(p.id, 'En Cocina')}
             onAvanzar={p => {
-              // Si es Delivery va a "En Camino", si es Salón/Mesa salta directo a "Entregado"
               const esDelivery = p.tipo_entrega && p.tipo_entrega.toLowerCase().includes('delivery');
-              actualizarEstadoPedido(p.id, esDelivery ? 'En Camino' : 'Entregado');
+              actualizarEstadoPedido(p.id, esDelivery ? 'En camino' : 'Entregado');
             }} 
             onVerDetalle={setPedidoSeleccionado} 
           />
@@ -145,9 +143,9 @@ export default function TrackingKanban({ idCliente, usuarioData }) {
             items={entregados} 
             colorHeader="#10b981" 
             onRetroceder={p => {
-              // Si es Delivery regresa a "En Camino", si es Mesa regresa a "Listo"
               const esDelivery = p.tipo_entrega && p.tipo_entrega.toLowerCase().includes('delivery');
-              actualizarEstadoPedido(p.id, esDelivery ? 'En Camino' : 'Listo');
+              // 🔒 USO ESTRICTO DE "En camino" EN MINÚSCULAS PARA EVITAR ERROR DE CONSTRAINTS
+              actualizarEstadoPedido(p.id, esDelivery ? 'En camino' : 'Listo');
             }}
             onCerrar={p => actualizarEstadoPedido(p.id, 'Entregado', 'Sí')} 
             onVerDetalle={setPedidoSeleccionado} 
