@@ -1,103 +1,194 @@
 import React, { useState } from 'react';
-import { supabase } from '../clientes';
+import tamtaraLogo from '../tamtara.png'; // Importación del logo recién subido
 
-export default function Login({ onLoginExitoso }) {
-  const [correo, setCorreo] = useState('');
+const Login = ({ onLogin }) => {
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [cargando, setCargando] = useState(false);
-  const [mensaje, setMensaje] = useState('');
+  const [keepSession, setKeepSession] = useState(false);
 
-  const manejarIngreso = async (e) => {
+  // Logo del cliente (empresa que usa la app). Puedes enlazarlo a tu BD después.
+  const clientLogoUrl = null; 
+
+  const handleSubmit = (e) => {
     e.preventDefault();
-    setCargando(true);
-    setMensaje('');
+    if (onLogin) onLogin(email, password);
+  };
 
-    try {
-      // Validamos credenciales en la tabla universal uni_usuarios
-      const { data, error } = await supabase
-        .from('uni_usuarios')
-        .select('*')
-        .eq('correo', correo.trim())
-        .single();
-
-      if (error || !data) {
-        setMensaje('⚠️ Correo no registrado o acceso no autorizado.');
-        setCargando(false);
-        return;
-      }
-
-      if (!data.estado) {
-        setMensaje('🚫 Tu cuenta se encuentra suspendida. Contacta al administrador.');
-        setCargando(false);
-        return;
-      }
-
-      if (data.password_hash !== password) {
-        setMensaje('❌ Contraseña incorrecta.');
-        setCargando(false);
-        return;
-      }
-
-      // Éxito: Enviamos los datos del usuario (incluyendo su id_cliente) al componente principal
-      onLoginExitoso(data);
-
-    } catch (err) {
-      setMensaje('🚨 Error de conexión con el servidor.');
-    } finally {
-      setCargando(false);
+  const styles = {
+    container: {
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      minHeight: '100vh',
+      backgroundColor: '#f4f6fb',
+      fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif"
+    },
+    card: {
+      backgroundColor: 'white',
+      padding: '40px 30px',
+      borderRadius: '12px',
+      boxShadow: '0 8px 30px rgba(0,0,0,0.08)',
+      width: '100%',
+      maxWidth: '350px',
+      textAlign: 'center'
+    },
+    logoContainer: {
+      marginBottom: '20px',
+      minHeight: '60px',
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center'
+    },
+    logoPlaceholder: {
+      fontSize: '50px',
+      color: '#7fa9f5'
+    },
+    clientImage: {
+      maxHeight: '70px',
+      maxWidth: '100%',
+      objectFit: 'contain'
+    },
+    subtitle: {
+      color: '#555',
+      fontSize: '13px',
+      marginBottom: '25px'
+    },
+    formGroup: {
+      textAlign: 'left',
+      marginBottom: '18px'
+    },
+    label: {
+      display: 'block',
+      color: '#5c6370',
+      fontSize: '12px',
+      marginBottom: '6px',
+      fontWeight: '600'
+    },
+    input: {
+      width: '100%',
+      padding: '12px 15px',
+      borderRadius: '25px',
+      border: '1px solid #d1d9e6',
+      backgroundColor: '#ebf0f7',
+      fontSize: '14px',
+      outline: 'none',
+      boxSizing: 'border-box',
+      transition: 'border-color 0.2s, box-shadow 0.2s'
+    },
+    checkboxGroup: {
+      display: 'flex',
+      alignItems: 'center',
+      textAlign: 'left',
+      marginBottom: '25px',
+      fontSize: '12px',
+      color: '#666'
+    },
+    checkbox: {
+      marginRight: '8px',
+      accentColor: '#1cb35b'
+    },
+    button: {
+      width: '100%',
+      padding: '12px',
+      backgroundColor: '#1cb35b',
+      color: 'white',
+      border: 'none',
+      borderRadius: '25px',
+      fontSize: '15px',
+      fontWeight: 'bold',
+      cursor: 'pointer',
+      marginBottom: '25px'
+    },
+    dividerLine: {
+      borderBottom: '1px solid #e8eaf2',
+      margin: '15px 0'
+    },
+    appName: {
+      fontFamily: "'Dancing Script', 'Brush Script MT', cursive",
+      fontSize: '24px',
+      color: '#3d2b56',
+      margin: '15px 0',
+      fontWeight: 'normal'
+    },
+    footer: {
+      fontSize: '9px',
+      color: '#888',
+      textTransform: 'uppercase',
+      letterSpacing: '1px',
+      marginTop: '15px'
+    },
+    poweredLogo: {
+      display: 'block',
+      margin: '8px auto 0',
+      height: '35px', // Tamaño ajustado para que se vea nítido
+      objectFit: 'contain'
     }
   };
 
   return (
-    <div style={estilos.contenedor}>
-      <div style={estilos.tarjeta}>
-        <h2 style={estilos.subtitulo}>Sistema de Gestión y Pedidos</h2>
-        <h1 style={estilos.tituloLogo}>Tamtara-Atiende</h1>
+    <div style={styles.container}>
+      <div style={styles.card}>
         
-        <form onSubmit={manejarIngreso} style={estilos.formulario}>
-          <div style={estilos.grupoInput}>
-            <label style={estilos.etiqueta}>Correo Electrónico</label>
+        <div style={styles.logoContainer}>
+          {clientLogoUrl ? (
+            <img src={clientLogoUrl} alt="Logo Cliente" style={styles.clientImage} />
+          ) : (
+            <div style={styles.logoPlaceholder}>🏢👤</div>
+          )}
+        </div>
+        
+        <p style={styles.subtitle}>Ingrese sus credenciales para acceder</p>
+        
+        <form onSubmit={handleSubmit}>
+          <div style={styles.formGroup}>
+            <label style={styles.label}>Correo Electrónico</label>
             <input 
               type="email" 
-              value={correo}
-              onChange={(e) => setCorreo(e.target.value)}
-              placeholder="admin@restaurante.com"
-              style={estilos.input}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              style={styles.input}
+              placeholder="ejemplo@correo.com"
               required
             />
           </div>
-
-          <div style={estilos.grupoInput}>
-            <label style={estilos.etiqueta}>Contraseña</label>
+          
+          <div style={styles.formGroup}>
+            <label style={styles.label}>Contraseña</label>
             <input 
               type="password" 
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              style={estilos.input}
+              style={styles.input}
+              placeholder="••••••••"
               required
             />
           </div>
-
-          {mensaje && <p style={estilos.mensaje}>{mensaje}</p>}
-
-          <button type="submit" disabled={cargando} style={estilos.boton}>
-            {cargando ? 'Verificando...' : 'Ingresar al Sistema'}
-          </button>
+          
+          <div style={styles.checkboxGroup}>
+            <input 
+              type="checkbox" 
+              id="keepSession"
+              checked={keepSession}
+              onChange={(e) => setKeepSession(e.target.checked)}
+              style={styles.checkbox}
+            />
+            <label htmlFor="keepSession">Mantener sesión abierta</label>
+          </div>
+          
+          <button type="submit" style={styles.button}>Ingresar</button>
         </form>
+
+        <div style={styles.dividerLine}></div>
+        <h2 style={styles.appName}>Atender App</h2>
+        <div style={styles.dividerLine}></div>
+        
+        <div style={styles.footer}>
+          POWERED BY
+          <img src={tamtaraLogo} alt="Logo Tamtara" style={styles.poweredLogo} />
+        </div>
       </div>
     </div>
   );
-}
-
-const estilos = {
-  contenedor: { display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', backgroundColor: '#EBF5F7', fontFamily: 'sans-serif', padding: '20px' },
-  tarjeta: { backgroundColor: '#FFFFFF', padding: '40px', borderRadius: '12px', boxShadow: '0 8px 24px rgba(0, 168, 159, 0.08)', width: '100%', maxWidth: '420px', textAlign: 'center' },
-  subtitulo: { fontSize: '0.95rem', color: '#666666', fontWeight: 'normal', marginBottom: '5px' },
-  tituloLogo: { fontSize: '2.2rem', fontWeight: 'bold', margin: '0 0 25px 0', background: 'linear-gradient(90deg, #00A89F 0%, #88D84D 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' },
-  formulario: { display: 'flex', flexDirection: 'column', gap: '15px' },
-  grupoInput: { display: 'flex', flexDirection: 'column', textAlign: 'left' },
-  etiqueta: { fontSize: '0.85rem', marginBottom: '6px', color: '#444444', fontWeight: '500' },
-  input: { padding: '10px', borderRadius: '8px', border: '1px solid #CCCCCC', backgroundColor: '#FAFAFA', color: '#333333', fontSize: '0.95rem', outline: 'none' },
-  mensaje: { fontSize: '0.85rem', color: '#D32F2F', fontWeight: '500', margin: '0', padding: '8px', backgroundColor: '#FFEBEE', borderRadius: '4px', textAlign: 'left' },
-  boton: { padding: '12px', borderRadius: '8px', border: 'none', background: 'linear-gradient(90deg, #00A89F 0%, #88D84D 100%)', color: '#FFFFFF', fontSize: '1rem', fontWeight: 'bold', cursor: 'pointer', marginTop: '5px' }
 };
+
+export default Login;
