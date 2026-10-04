@@ -1,6 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabase';
 
+// 🔒 CONSTANTES ESTRICTAS SEGÚN EL CONSTRAINT DE SUPABASE
+const ESTADOS_BD = {
+  EN_COCINA: 'En cocina', // Exactamente como en la BD (c minúscula)
+  LISTO: 'Listo',
+  DESPACHADO: 'Despachado',
+  ENTREGADO: 'Entregado'
+};
+
 export default function TrackingKanban({ idCliente, usuarioData }) {
   const clienteIdFinal = idCliente || usuarioData?.id_cliente;
 
@@ -69,11 +77,11 @@ export default function TrackingKanban({ idCliente, usuarioData }) {
   const pedidosEnProceso = pedidosFiltrados.filter(p => p.pedido_cerrado !== 'Sí');
   const pedidosCerrados = pedidosFiltrados.filter(p => p.pedido_cerrado === 'Sí');
 
-  // Mapeo exacto con los 4 estados autorizados por el check_estado de Supabase
-  const enCocina = pedidosEnProceso.filter(p => p.estado === 'En cocina' || p.estado === 'Pendiente' || p.estado === 'En Cocina');
-  const enBarra = pedidosEnProceso.filter(p => p.estado === 'Listo');
-  const enCamino = pedidosEnProceso.filter(p => p.estado === 'Despachado');
-  const entregados = pedidosEnProceso.filter(p => p.estado === 'Entregado');
+  // Clasificación blindada con las constantes
+  const enCocina = pedidosEnProceso.filter(p => p.estado === ESTADOS_BD.EN_COCINA || p.estado === 'Pendiente');
+  const enBarra = pedidosEnProceso.filter(p => p.estado === ESTADOS_BD.LISTO);
+  const enCamino = pedidosEnProceso.filter(p => p.estado === ESTADOS_BD.DESPACHADO);
+  const entregados = pedidosEnProceso.filter(p => p.estado === ESTADOS_BD.ENTREGADO);
 
   return (
     <div style={{ padding: '24px', fontFamily: "'Segoe UI', sans-serif", backgroundColor: '#f8fafc', minHeight: '100vh', position: 'relative' }}>
@@ -117,18 +125,17 @@ export default function TrackingKanban({ idCliente, usuarioData }) {
             titulo="👨‍🍳 En Cocina" 
             items={enCocina} 
             colorHeader="#f59e0b" 
-            onAvanzar={p => actualizarEstadoPedido(p.id, 'Listo')} 
+            onAvanzar={p => actualizarEstadoPedido(p.id, ESTADOS_BD.LISTO)} 
             onVerDetalle={setPedidoSeleccionado} 
           />
           <ColumnaKanban 
             titulo="🔔 Listo en Barra" 
             items={enBarra} 
             colorHeader="#3b82f6" 
-            onRetroceder={p => actualizarEstadoPedido(p.id, 'En cocina')}
+            onRetroceder={p => actualizarEstadoPedido(p.id, ESTADOS_BD.EN_COCINA)}
             onAvanzar={p => {
               const esDelivery = p.tipo_entrega && p.tipo_entrega.toLowerCase().includes('delivery');
-              // 🔒 Si es Delivery va a 'Despachado', si es Salón/Mesa salta directo a 'Entregado'
-              actualizarEstadoPedido(p.id, esDelivery ? 'Despachado' : 'Entregado');
+              actualizarEstadoPedido(p.id, esDelivery ? ESTADOS_BD.DESPACHADO : ESTADOS_BD.ENTREGADO);
             }} 
             onVerDetalle={setPedidoSeleccionado} 
           />
@@ -136,8 +143,8 @@ export default function TrackingKanban({ idCliente, usuarioData }) {
             titulo="🛵 En Camino" 
             items={enCamino} 
             colorHeader="#8b5cf6" 
-            onRetroceder={p => actualizarEstadoPedido(p.id, 'Listo')}
-            onAvanzar={p => actualizarEstadoPedido(p.id, 'Entregado')} 
+            onRetroceder={p => actualizarEstadoPedido(p.id, ESTADOS_BD.LISTO)}
+            onAvanzar={p => actualizarEstadoPedido(p.id, ESTADOS_BD.ENTREGADO)} 
             onVerDetalle={setPedidoSeleccionado} 
           />
           <ColumnaKanban 
@@ -146,10 +153,9 @@ export default function TrackingKanban({ idCliente, usuarioData }) {
             colorHeader="#10b981" 
             onRetroceder={p => {
               const esDelivery = p.tipo_entrega && p.tipo_entrega.toLowerCase().includes('delivery');
-              // 🔒 Al retroceder, si es delivery regresa a 'Despachado', si es mesa regresa a 'Listo'
-              actualizarEstadoPedido(p.id, esDelivery ? 'Despachado' : 'Listo');
+              actualizarEstadoPedido(p.id, esDelivery ? ESTADOS_BD.DESPACHADO : ESTADOS_BD.LISTO);
             }}
-            onCerrar={p => actualizarEstadoPedido(p.id, 'Entregado', 'Sí')} 
+            onCerrar={p => actualizarEstadoPedido(p.id, ESTADOS_BD.ENTREGADO, 'Sí')} 
             onVerDetalle={setPedidoSeleccionado} 
           />
         </div>
@@ -169,7 +175,7 @@ export default function TrackingKanban({ idCliente, usuarioData }) {
                   <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
                     <span style={{ fontWeight: 'bold', color: '#0d9488' }}>S/. {Number(p.monto_total).toFixed(2)}</span>
                     <button 
-                      onClick={() => actualizarEstadoPedido(p.id, 'Entregado', 'No')}
+                      onClick={() => actualizarEstadoPedido(p.id, ESTADOS_BD.ENTREGADO, 'No')}
                       style={{ background: '#f59e0b', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 'bold', cursor: 'pointer' }}
                     >
                       ⬅️ Reabrir Pedido
