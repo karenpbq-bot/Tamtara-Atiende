@@ -13,7 +13,7 @@ import { supabase } from './supabase';
 export default function App() {
   const [usuarioActual, setUsuarioActual] = useState(null);
   const [cargando, setCargando] = useState(true);
-  const [moduloActivo, setModuloActivo] = useState('dashboard');
+  const [moduloActivo, setModuloActivo] = useState('terminal');
 
   useEffect(() => {
     const sesionGuardada = localStorage.getItem('atiende_sesion_activa');
@@ -42,7 +42,7 @@ export default function App() {
         };
         setUsuarioActual(datosCompletos);
         localStorage.setItem('atiende_sesion_activa', JSON.stringify(datosCompletos));
-        setModuloActivo('dashboard');
+        setModuloActivo('terminal');
         return;
       }
 
