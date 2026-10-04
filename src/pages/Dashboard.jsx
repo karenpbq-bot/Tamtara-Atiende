@@ -1,85 +1,21 @@
-import React, { useState } from 'react';
-import Sidebar from './Sidebar';
-import TerminalPedidos from '../components/TerminalPedidos';
-import TrackingKanban from '../components/TrackingKanban';
-import CartaMenu from '../components/CartaMenu';
+import React from 'react';
 
-export default function Dashboard({ usuarioData, onCerrarSesion }) {
-  // Por defecto iniciamos en el terminal de pedidos o en dashboard según prefieras
-  const [moduloActivo, setModuloActivo] = useState('terminal');
-
-  const idCliente = usuarioData?.id_cliente;
-
+export default function Dashboard({ usuarioData }) {
   return (
-    <div style={estilos.layoutPrincipal}>
-      
-      {/* MENÚ LATERAL PROFESIONAL */}
-      <Sidebar 
-        usuarioData={usuarioData} 
-        moduloActivo={moduloActivo} 
-        setModuloActivo={setModuloActivo} 
-        onCerrarSesion={onCerrarSesion} 
-      />
-
-      {/* CONTENIDO PRINCIPAL SEGÚN EL MÓDULO SELECCIONADO */}
-      <main style={estilos.contenidoPrincipal}>
-        {moduloActivo === 'dashboard' && (
-          <div style={estilos.vistaBienvenida}>
-            <h2>👋 ¡Bienvenido al Panel Operativo, {usuarioData?.nombre || usuarioData?.correo}!</h2>
-            <p>Selecciona una opción en el menú lateral para comenzar a operar.</p>
-          </div>
-        )}
-
-        {moduloActivo === 'terminal' && <TerminalPedidos idCliente={idCliente} />}
-        
-        {moduloActivo === 'kanban' && <TrackingKanban idCliente={idCliente} usuarioData={usuarioData} />}
-        
-        {moduloActivo === 'carta' && <CartaMenu idCliente={idCliente} />}
-        
-        {moduloActivo === 'kardex' && (
-          <div style={estilos.placeholderModulo}>
-            <h3>📦 Módulo de Kardex e Inventarios</h3>
-            <p>Control de stock y movimientos de materia prima en desarrollo.</p>
-          </div>
-        )}
-        
-        {moduloActivo === 'recetas' && (
-          <div style={estilos.placeholderModulo}>
-            <h3>🍳 Módulo de Recetas y Costos</h3>
-            <p>Estructura de costos de elaboración y escandallo en desarrollo.</p>
-          </div>
-        )}
-      </main>
-
+    <div style={{ padding: '20px', fontFamily: "'Segoe UI', sans-serif" }}>
+      <div style={{ background: '#fff', padding: '30px', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+        <h2 style={{ color: '#0f766e', marginTop: 0 }}>
+          👋 ¡Bienvenido, {usuarioData?.nombre || usuarioData?.correo || 'Administrador'}!
+        </h2>
+        <p style={{ color: '#64748b', fontSize: '1rem', lineHeight: '1.5' }}>
+          Selecciona un módulo en el menú lateral izquierdo (Terminal de Pedidos, Tracking Kanban, Carta, etc.) para comenzar a operar de manera rápida y segura.
+        </p>
+        <div style={{ marginTop: '20px', padding: '15px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0', display: 'inline-block' }}>
+          <span style={{ fontSize: '0.85rem', color: '#334155', fontWeight: 'bold' }}>
+            🏢 ID de Inquilino Activo: {usuarioData?.id_cliente || 'N/D'}
+          </span>
+        </div>
+      </div>
     </div>
   );
 }
-
-const estilos = {
-  layoutPrincipal: {
-    display: 'flex',
-    height: '100vh',
-    backgroundColor: '#f8fafc',
-    fontFamily: "'Segoe UI', sans-serif",
-    overflow: 'hidden'
-  },
-  contenidoPrincipal: {
-    flex: 1,
-    marginLeft: '260px', // Deja espacio exacto para el ancho del Sidebar fijo
-    height: '100vh',
-    overflowY: 'auto',
-    backgroundColor: '#f8fafc'
-  },
-  vistaBienvenida: {
-    padding: '40px',
-    textAlign: 'center',
-    color: '#334155',
-    marginTop: '100px'
-  },
-  placeholderModulo: {
-    padding: '40px',
-    textAlign: 'center',
-    color: '#64748b',
-    marginTop: '50px'
-  }
-};
