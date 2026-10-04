@@ -62,6 +62,7 @@ export default function CartaMenu({ idCliente }) {
       setDescripcion('');
       setPrecioVenta('');
       setCodigoCorto('');
+      setCategoria('Principal');
       cargarProductos();
 
       setTimeout(() => setMensaje(''), 3000);
@@ -73,7 +74,7 @@ export default function CartaMenu({ idCliente }) {
   return (
     <div style={estilos.contenedor}>
       <h3 style={estilos.subSubTitulo}>Gestión de Carta y Menú</h3>
-      <p style={estilos.textoInstruccion}>Agrega y administra los platos, bebidas y snacks disponibles para tu local.</p>
+      <p style={estilos.textoInstruccion}>Agrega y administra los platos, bebidas, aditivos gratis y porciones adicionales disponibles para tu local.</p>
 
       {mensaje && <p style={estilos.mensajeFeedback}>{mensaje}</p>}
 
@@ -83,12 +84,12 @@ export default function CartaMenu({ idCliente }) {
           <h4 style={estilos.tituloForm}>Nuevo Ítem para la Carta</h4>
 
           <div style={estilos.grupoInput}>
-            <label style={estilos.label}>Nombre del Producto</label>
+            <label style={estilos.label}>Nombre del Producto / Aditivo</label>
             <input 
               type="text" 
               value={nombre} 
               onChange={(e) => setNombre(e.target.value)} 
-              placeholder="Ej. Burger Clásica"
+              placeholder="Ej. Burger Clásica o Crema de Rocoto"
               style={estilos.input}
               required 
             />
@@ -96,10 +97,10 @@ export default function CartaMenu({ idCliente }) {
 
           <div style={estilos.filaInputs}>
             <div style={estilos.grupoInput}>
-              <label style={estilos.label}>Precio de Venta ($ / S/)</label>
+              <label style={estilos.label}>Precio de Venta (S/.)</label>
               <input 
                 type="number" 
-                step="0.01" 
+                step="0.50" 
                 value={precioVenta} 
                 onChange={(e) => setPrecioVenta(e.target.value)} 
                 placeholder="24.90"
@@ -116,8 +117,8 @@ export default function CartaMenu({ idCliente }) {
               >
                 <option value="Principal">Principal</option>
                 <option value="Bebidas">Bebidas</option>
-                <option value="Adicionales">Adicionales</option>
-                <option value="Snacks">Snacks</option>
+                <option value="Ad Gratis">Ad Gratis</option>
+                <option value="Ad Porción">Ad Porción</option>
               </select>
             </div>
           </div>
@@ -128,7 +129,7 @@ export default function CartaMenu({ idCliente }) {
               type="text" 
               value={codigoCorto} 
               onChange={(e) => setCodigoCorto(e.target.value)} 
-              placeholder="Ej. B200"
+              placeholder="Ej. B200, ROC"
               style={estilos.input}
             />
           </div>
@@ -162,7 +163,7 @@ export default function CartaMenu({ idCliente }) {
                 <div key={p.id} style={estilos.cardProducto}>
                   <div style={estilos.cardHeader}>
                     <span style={estilos.badgeCategoria}>{p.categoria}</span>
-                    <span style={estilos.precioProducto}>S/ {Number(p.precio_venta).toFixed(2)}</span>
+                    <span style={estilos.precioProducto}>S/. {Number(p.precio_venta).toFixed(2)}</span>
                   </div>
                   <h5 style={estilos.nombreProducto}>{p.nombre}</h5>
                   <p style={estilos.descProducto}>{p.descripcion || 'Sin descripción.'}</p>
