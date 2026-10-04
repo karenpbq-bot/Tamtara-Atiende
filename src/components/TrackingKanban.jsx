@@ -39,7 +39,7 @@ export default function TrackingKanban({ idCliente, usuarioData }) {
     }
   };
 
-  // Función utilizando estrictamente los nombres de estado aceptados por check_estado
+  // Función utilizando exclusivamente los 4 estados válidos permitidos por check_estado
   const actualizarEstadoPedido = async (id, nuevoEstado, pedidoCerradoValor = 'No') => {
     try {
       const { error } = await supabase
@@ -70,10 +70,10 @@ export default function TrackingKanban({ idCliente, usuarioData }) {
   const pedidosEnProceso = pedidosFiltrados.filter(p => p.pedido_cerrado !== 'Sí');
   const pedidosCerrados = pedidosFiltrados.filter(p => p.pedido_cerrado === 'Sí');
 
-  // Mapeo exacto con los estados que acepta la base de datos
-  const enCocina = pedidosEnProceso.filter(p => p.estado === 'En cocina' || p.estado === 'Pendiente' || p.estado === 'En Cocina');
-  const enBarra = pedidosEnProceso.filter(p => p.estado === 'Listo en barra' || p.estado === 'Listo');
-  const enCamino = pedidosEnProceso.filter(p => p.estado === 'En camino' || p.estado === 'En Camino');
+  // Mapeo adaptado exactamente a los 4 estados que acepta la base de datos
+  const enCocina = pedidosEnProceso.filter(p => p.estado === 'Pendiente' || p.estado === 'En Cocina' || p.estado === 'En cocina');
+  const enBarra = pedidosEnProceso.filter(p => p.estado === 'Listo');
+  const enCamino = pedidosEnProceso.filter(p => p.estado === 'En Camino' || p.estado === 'En camino');
   const entregados = pedidosEnProceso.filter(p => p.estado === 'Entregado');
 
   return (
@@ -118,22 +118,22 @@ export default function TrackingKanban({ idCliente, usuarioData }) {
             titulo="👨‍🍳 En Cocina" 
             items={enCocina} 
             colorHeader="#f59e0b" 
-            onAvanzar={id => actualizarEstadoPedido(id, 'Listo en barra')} 
+            onAvanzar={id => actualizarEstadoPedido(id, 'Listo')} 
             onVerDetalle={setPedidoSeleccionado} 
           />
           <ColumnaKanban 
             titulo="🔔 Listo en Barra" 
             items={enBarra} 
             colorHeader="#3b82f6" 
-            onRetroceder={id => actualizarEstadoPedido(id, 'En cocina')}
-            onAvanzar={id => actualizarEstadoPedido(id, 'En camino')} 
+            onRetroceder={id => actualizarEstadoPedido(id, 'En Cocina')}
+            onAvanzar={id => actualizarEstadoPedido(id, 'Entregado')} 
             onVerDetalle={setPedidoSeleccionado} 
           />
           <ColumnaKanban 
             titulo="🛵 En Camino" 
             items={enCamino} 
             colorHeader="#8b5cf6" 
-            onRetroceder={id => actualizarEstadoPedido(id, 'Listo en barra')}
+            onRetroceder={id => actualizarEstadoPedido(id, 'Listo')}
             onAvanzar={id => actualizarEstadoPedido(id, 'Entregado')} 
             onVerDetalle={setPedidoSeleccionado} 
           />
@@ -141,7 +141,7 @@ export default function TrackingKanban({ idCliente, usuarioData }) {
             titulo="✅ Entregados" 
             items={entregados} 
             colorHeader="#10b981" 
-            onRetroceder={id => actualizarEstadoPedido(id, 'En camino')}
+            onRetroceder={id => actualizarEstadoPedido(id, 'Listo')}
             onCerrar={id => actualizarEstadoPedido(id, 'Entregado', 'Sí')} 
             onVerDetalle={setPedidoSeleccionado} 
           />
