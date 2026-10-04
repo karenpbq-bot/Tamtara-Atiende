@@ -7,10 +7,13 @@ export function AdminClientes() {
   
   const [nuevoCliente, setNuevoCliente] = useState({
     nombre_empresa: '',
+    nombre_marca: '',
+    tipo_especialidad: 'Restaurante / Cafetería',
     codigo_invitacion_5d: '',
     tipo_plan: 'Mensual',
     costo_plan: '',
     vigencia_plan: '',
+    estado: true,
     estado_suscripcion: true
   });
 
@@ -45,7 +48,17 @@ export function AdminClientes() {
       alert('Error al registrar cliente: ' + error.message);
     } else {
       alert('¡Cliente y código de acceso de 5 dígitos creados con éxito!');
-      setNuevoCliente({ nombre_empresa: '', codigo_invitacion_5d: '', tipo_plan: 'Mensual', costo_plan: '', vigencia_plan: '', estado_suscripcion: true });
+      setNuevoCliente({
+        nombre_empresa: '',
+        nombre_marca: '',
+        tipo_especialidad: 'Restaurante / Cafetería',
+        codigo_invitacion_5d: '',
+        tipo_plan: 'Mensual',
+        costo_plan: '',
+        vigencia_plan: '',
+        estado: true,
+        estado_suscripcion: true
+      });
       fetchClientes();
     }
   };
@@ -75,7 +88,7 @@ export function AdminClientes() {
       borderRadius: '12px',
       boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)',
       marginBottom: '36px',
-      maxWidth: '650px',
+      maxWidth: '700px',
       border: '1px solid #e5e7eb'
     },
     formTitle: {
@@ -106,7 +119,7 @@ export function AdminClientes() {
     },
     rowFlex: {
       display: 'flex',
-      gap: '10px'
+      gap: '12px'
     },
     buttonGen: {
       padding: '0 16px',
@@ -116,8 +129,7 @@ export function AdminClientes() {
       borderRadius: '8px',
       fontSize: '13px',
       fontWeight: '600',
-      cursor: 'pointer',
-      transition: 'background 0.2s'
+      cursor: 'pointer'
     },
     buttonSubmit: {
       padding: '12px',
@@ -128,8 +140,7 @@ export function AdminClientes() {
       fontSize: '14px',
       fontWeight: '600',
       cursor: 'pointer',
-      marginTop: '10px',
-      transition: 'background 0.2s'
+      marginTop: '10px'
     },
     tableContainer: {
       background: '#ffffff',
@@ -180,33 +191,61 @@ export function AdminClientes() {
         <div style={styles.formTitle}>Registrar Nuevo Inquilino</div>
         <form onSubmit={handleCrearCliente} style={{ display: 'flex', flexDirection: 'column' }}>
           
-          <div style={styles.inputGroup}>
-            <label style={styles.label}>Nombre de la Empresa o Negocio</label>
-            <input 
-              type="text" 
-              placeholder="Ej. Restaurante La Exacta" 
-              value={nuevoCliente.nombre_empresa} 
-              onChange={(e) => setNuevoCliente({ ...nuevoCliente, nombre_empresa: e.target.value })} 
-              required 
-              style={styles.input}
-            />
-          </div>
-
-          <div style={styles.inputGroup}>
-            <label style={styles.label}>Código Único de Administrador (5 Dígitos)</label>
-            <div style={styles.rowFlex}>
+          <div style={styles.rowFlex}>
+            <div style={{ ...styles.inputGroup, flex: 1 }}>
+              <label style={styles.label}>Razón Social / Empresa</label>
               <input 
                 type="text" 
-                placeholder="Ej. AB34K" 
-                value={nuevoCliente.codigo_invitacion_5d} 
-                onChange={(e) => setNuevoCliente({ ...nuevoCliente, codigo_invitacion_5d: e.target.value.toUpperCase() })} 
-                maxLength={5}
+                placeholder="Ej. Inversiones EIRL" 
+                value={nuevoCliente.nombre_empresa} 
+                onChange={(e) => setNuevoCliente({ ...nuevoCliente, nombre_empresa: e.target.value })} 
                 required 
-                style={{ ...styles.input, flex: 1, letterSpacing: '2px', fontWeight: 'bold' }}
+                style={styles.input}
               />
-              <button type="button" onClick={generarCodigo5D} style={styles.buttonGen}>
-                Generar 5D
-              </button>
+            </div>
+
+            <div style={{ ...styles.inputGroup, flex: 1 }}>
+              <label style={styles.label}>Nombre Comercial / Marca</label>
+              <input 
+                type="text" 
+                placeholder="Ej. La Exacta" 
+                value={nuevoCliente.nombre_marca} 
+                onChange={(e) => setNuevoCliente({ ...nuevoCliente, nombre_marca: e.target.value })} 
+                required 
+                style={styles.input}
+              />
+            </div>
+          </div>
+
+          <div style={styles.rowFlex}>
+            <div style={{ ...styles.inputGroup, flex: 1 }}>
+              <label style={styles.label}>Tipo de Especialidad</label>
+              <input 
+                type="text" 
+                placeholder="Ej. Restaurante / Cafetería" 
+                value={nuevoCliente.tipo_especialidad} 
+                onChange={(e) => setNuevoCliente({ ...nuevoCliente, tipo_especialidad: e.target.value })} 
+                required 
+                style={styles.input}
+              />
+            </div>
+
+            <div style={{ ...styles.inputGroup, flex: 1 }}>
+              <label style={styles.label}>Código Administrador (5D)</label>
+              <div style={styles.rowFlex}>
+                <input 
+                  type="text" 
+                  placeholder="Ej. AB34K" 
+                  value={nuevoCliente.codigo_invitacion_5d} 
+                  onChange={(e) => setNuevoCliente({ ...nuevoCliente, codigo_invitacion_5d: e.target.value.toUpperCase() })} 
+                  maxLength={5}
+                  required 
+                  style={{ ...styles.input, flex: 1, letterSpacing: '2px', fontWeight: 'bold' }}
+                />
+                <button type="button" onClick={generarCodigo5D} style={styles.buttonGen}>
+                  Generar
+                </button>
+              </div>
             </div>
           </div>
 
@@ -265,7 +304,8 @@ export function AdminClientes() {
           <table style={styles.table}>
             <thead>
               <tr>
-                <th style={styles.th}>Empresa</th>
+                <th style={styles.th}>Empresa / Marca</th>
+                <th style={styles.th}>Especialidad</th>
                 <th style={styles.th}>Código (5D)</th>
                 <th style={styles.th}>Plan</th>
                 <th style={styles.th}>Costo</th>
@@ -276,7 +316,10 @@ export function AdminClientes() {
             <tbody>
               {clientes.map((c) => (
                 <tr key={c.id_cliente}>
-                  <td style={{ ...styles.td, fontWeight: '600', color: '#111827' }}>{c.nombre_empresa}</td>
+                  <td style={{ ...styles.td, fontWeight: '600', color: '#111827' }}>
+                    {c.nombre_marca} <span style={{ fontSize: '12px', color: '#6b7280', fontWeight: 'normal' }}>({c.nombre_empresa})</span>
+                  </td>
+                  <td style={styles.td}>{c.tipo_especialidad}</td>
                   <td style={styles.td}><code style={{ background: '#f3f4f6', padding: '4px 8px', borderRadius: '4px', fontWeight: 'bold', color: '#4f46e5' }}>{c.codigo_invitacion_5d}</code></td>
                   <td style={styles.td}>{c.tipo_plan}</td>
                   <td style={styles.td}>${c.costo_plan}</td>
@@ -291,7 +334,7 @@ export function AdminClientes() {
               ))}
               {clientes.length === 0 && (
                 <tr>
-                  <td colSpan="6" style={{ padding: '30px', textAlign: 'center', color: '#9ca3af' }}>
+                  <td colSpan="7" style={{ padding: '30px', textAlign: 'center', color: '#9ca3af' }}>
                     No hay clientes registrados todavía.
                   </td>
                 </tr>
