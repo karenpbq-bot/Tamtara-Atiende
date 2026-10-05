@@ -1,7 +1,15 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import tamtaraLogo from '../tamtara.png';
 
 const Sidebar = ({ usuarioData, moduloActivo, setModuloActivo, onCerrarSesion }) => {
+  
+  // Escuchar la orden global para cambiar de módulo automáticamente (ej. desde el Kanban)
+  useEffect(() => {
+    const handleCambioModulo = (e) => setModuloActivo(e.detail);
+    window.addEventListener('cambiarModulo', handleCambioModulo);
+    return () => window.removeEventListener('cambiarModulo', handleCambioModulo);
+  }, [setModuloActivo]);
+
   // Aquí evaluaremos más adelante el logo del cliente según usuarioData.codigo_7d
   // Por ahora, si es superadmin mostramos Tamtara, de lo contrario un genérico.
   const logoUrl = usuarioData?.rol === 'superadmin' ? tamtaraLogo : null;
