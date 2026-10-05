@@ -162,8 +162,31 @@ export default function TerminalPedidos({ idCliente }) {
     const montoRec = montoRecibido === '' ? totalCalculado : Number(montoRecibido);
     const vueltoCalc = metodoPago === 'Efectivo' && !esCortesia ? Math.max(0, montoRec - totalCalculado) : 0.0;
     
-    // Si estamos editando, mantenemos el código, si no, creamos uno nuevo.
-    const codigoTicket = pedidoEditandoId ? codigoExistente : `PED-${Math.floor(100 + Math.random() * 900)}`;
+    // 🕒 Obtener la fecha actual en Perú para extraer el prefijo DDMM
+    const fechaPeruISO = new Date().toLocaleString("sv-SE", { timeZone: "America/Lima" }).replace(" ", "T");
+    const hoyStr = new Date().toLocaleString("sv-SE", { timeZone: "America/Lima" }).split(' ')[0]; // YYYY-MM-DD
+    const [anio, mes, dia] = hoyStr.split('-');
+    const prefijoHoy = `${dia}${mes}`; // Ej: "0510" para el 5 de Octubre
+
+    // Si es un pedido nuevo, calculamos el correlativo diario exacto basado en la BD
+    let codigoTicket = codigoExistente;
+    if (!pedidoEditandoId) {
+      try {
+        const { count, error } = await supabase
+          .from('pedidos')
+          .select('*', { count: 'exact', head: true })
+          .eq('id_cliente', Number(idCliente))
+          .ilike('codigo_exacta', `${prefijoHoy}-%`);
+
+        const siguienteCorrelativo = error || count === null ? 1 : count + 1;
+        codigoTicket = `${prefijoHoy}-${String(siguienteCorrelativo).padStart(3, '0')}`;
+      } catch (err) {
+        // Fallback seguro en caso de error de red
+        const randomFallback = Math.floor(100 + Math.random() * 900);
+        codigoTicket = `${prefijoHoy}-${randomFallback}`;
+      }
+    }
+
     const tipoEntregaNormalizado = tipoEntrega.includes('Delivery') ? 'Delivery' : 'Mesa';
 
     // 🕒 SOLUCIÓN AL DESFASE DE FECHA: Forzamos la hora exacta de Perú en formato ISO
