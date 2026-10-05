@@ -162,11 +162,11 @@ export default function TerminalPedidos({ idCliente }) {
     const montoRec = montoRecibido === '' ? totalCalculado : Number(montoRecibido);
     const vueltoCalc = metodoPago === 'Efectivo' && !esCortesia ? Math.max(0, montoRec - totalCalculado) : 0.0;
     
-    // 🕒 Obtener la fecha actual en Perú para extraer el prefijo DDMM
-    const fechaPeruISO = new Date().toLocaleString("sv-SE", { timeZone: "America/Lima" }).replace(" ", "T");
-    const hoyStr = new Date().toLocaleString("sv-SE", { timeZone: "America/Lima" }).split(' ')[0]; // YYYY-MM-DD
-    const [anio, mes, dia] = hoyStr.split('-');
-    const prefijoHoy = `${dia}${mes}`; // Ej: "0510" para el 5 de Octubre
+    // 🕒 Cálculo seguro del prefijo DDMM basado en la fecha local actual
+    const ahora = new Date();
+    const diaStr = String(ahora.getDate()).padStart(2, '0');
+    const mesStr = String(ahora.getMonth() + 1).padStart(2, '0');
+    const prefijoHoy = `${diaStr}${mesStr}`; // Ej: "0510"
 
     // Si es un pedido nuevo, calculamos el correlativo diario exacto basado en la BD
     let codigoTicket = codigoExistente;
@@ -181,7 +181,6 @@ export default function TerminalPedidos({ idCliente }) {
         const siguienteCorrelativo = error || count === null ? 1 : count + 1;
         codigoTicket = `${prefijoHoy}-${String(siguienteCorrelativo).padStart(3, '0')}`;
       } catch (err) {
-        // Fallback seguro en caso de error de red
         const randomFallback = Math.floor(100 + Math.random() * 900);
         codigoTicket = `${prefijoHoy}-${randomFallback}`;
       }
