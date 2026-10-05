@@ -21,8 +21,8 @@ const Sidebar = ({ usuarioData, moduloActivo, setModuloActivo, onCerrarSesion })
 
     // 2. Diccionario de clientes: Vincula el código 5D con su archivo de imagen
     const logosPorCliente = {
-      'AB34K': logoLaExacta, // Código de La Exacta
-      'PRU99': logoPrueba,   // Código del cliente Prueba
+      '0AZPU': logoLaExacta, // Código de La Exacta
+      'ESTJQ': logoPrueba,   // Código del cliente Prueba
     };
 
     // 3. Devolvemos el logo si existe, si no, devolvemos null
