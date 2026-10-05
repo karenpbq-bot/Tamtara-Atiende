@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
-import tamtaraLogo from '../tamtara.png';
-import logoLaExacta from '../Laexacta.png'; 
-import logoPrueba from '../logo-prueba.png'; // 👈 ESTA LÍNEA ES LA QUE FALTA
+import tamtaraLogo from '../tamtara.png'; // Este se queda con ../ porque está en la carpeta raíz src/
+import logoLaExacta from './Laexacta.png'; // Cambiado a ./ porque está en la misma carpeta components/
+import logoPrueba from './logo-prueba.png'; // Cambiado a ./ porque está en la misma carpeta components/
 
 const Sidebar = ({ usuarioData, moduloActivo, setModuloActivo, onCerrarSesion }) => {
   
