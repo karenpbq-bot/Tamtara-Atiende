@@ -65,6 +65,24 @@ export default function TrackingKanban({ idCliente, usuarioData }) {
     }
   };
 
+  const eliminarPedido = async (id, codigo) => {
+    const confirmacion = window.confirm(`¿Estás completamente seguro de eliminar de la base de datos el pedido ${codigo}? Esta acción es irreversible.`);
+    if (!confirmacion) return;
+
+    try {
+      const { error } = await supabase
+        .from('pedidos')
+        .delete()
+        .eq('id', id)
+        .eq('id_cliente', Number(clienteIdFinal));
+
+      if (error) throw error;
+      cargarPedidos();
+    } catch (err) {
+      alert('Error al eliminar el pedido: ' + err.message);
+    }
+  };
+  
   const pedidosFiltrados = pedidos.filter(p => {
     const texto = busqueda.toLowerCase();
     return (
@@ -128,10 +146,10 @@ export default function TrackingKanban({ idCliente, usuarioData }) {
             onAvanzar={p => actualizarEstadoPedido(p.id, ESTADOS_BD.LISTO)} 
             onVerDetalle={setPedidoSeleccionado} 
             onRecuperar={(p) => {
-              // Guardamos el pedido en memoria y disparamos el cambio de pantalla automático
               localStorage.setItem('pedidoAEditar', JSON.stringify(p));
               window.dispatchEvent(new CustomEvent('cambiarModulo', { detail: 'terminal' }));
             }}
+            onEliminar={(id, codigo) => eliminarPedido(id, codigo)}
           />
           <ColumnaKanban 
             titulo="🔔 Listo en Barra" 
@@ -183,7 +201,14 @@ export default function TrackingKanban({ idCliente, usuarioData }) {
                       onClick={() => actualizarEstadoPedido(p.id, ESTADOS_BD.ENTREGADO, 'No')}
                       style={{ background: '#f59e0b', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 'bold', cursor: 'pointer' }}
                     >
-                      ⬅️ Reabrir Pedido
+                      ⬅️ Reabrir
+                    </button>
+                    <button 
+                      onClick={() => eliminarPedido(p.id, p.codigo_exacta)}
+                      style={{ background: '#fee2e2', color: '#ef4444', border: '1px solid #f87171', padding: '6px 12px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 'bold', cursor: 'pointer' }}
+                      title="Eliminar permanentemente"
+                    >
+                      🗑️ Eliminar
                     </button>
                   </div>
                 </div>
@@ -284,6 +309,14 @@ function ColumnaKanban({ titulo, items, colorHeader, onRetroceder, onAvanzar, on
                       ⬅️
                     </button>
                   )}
+
+                  {/* BOTÓN ROJO DE ELIMINAR (Solo para pendientes en Kanban) */}
+                  {onEliminar && esPendiente && (
+                    <button onClick={() => onEliminar(p.id, p.codigo_exacta)} style={{ background: '#fee2e2', color: '#ef4444', border: '1px solid #f87171', padding: '4px 8px', borderRadius: '6px', fontSize: '0.7rem', fontWeight: 'bold', cursor: 'pointer' }} title="Eliminar permanentemente">
+                      🗑️
+                    </button>
+                  )}
+                  
                   {onAvanzar && (
                     <button onClick={() => onAvanzar(p)} style={{ flex: 1, background: '#0d9488', color: '#fff', border: 'none', padding: '5px', borderRadius: '6px', fontSize: '0.7rem', fontWeight: 'bold', cursor: 'pointer' }}>
                       Avanzar ➔
