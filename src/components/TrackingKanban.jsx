@@ -258,7 +258,7 @@ export default function TrackingKanban({ idCliente, usuarioData }) {
   );
 }
 
-function ColumnaKanban({ titulo, items, colorHeader, onRetroceder, onAvanzar, onCerrar, onVerDetalle, onRecuperar }) {
+function ColumnaKanban({ titulo, items, colorHeader, onRetroceder, onAvanzar, onCerrar, onVerDetalle, onRecuperar, onEliminar }) {
   return (
     <div style={{ background: '#ffffff', borderRadius: '12px', border: '1px solid #e2e8f0', overflow: 'hidden', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
       <div style={{ backgroundColor: colorHeader, color: '#fff', padding: '10px 14px', fontWeight: 'bold', fontSize: '0.9rem', textAlign: 'center' }}>
