@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import tamtaraLogo from '../tamtara.png';
-import logoLaExacta from '../Laexacta.png'; // 👈 Asegúrate de que el archivo se llame exactamente así
+import logoLaExacta from '../Laexacta.png'; 
+import logoPrueba from '../logo-prueba.png'; // 👈 ESTA LÍNEA ES LA QUE FALTA
 
 const Sidebar = ({ usuarioData, moduloActivo, setModuloActivo, onCerrarSesion }) => {
   
