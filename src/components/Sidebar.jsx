@@ -15,23 +15,16 @@ const Sidebar = ({ usuarioData, moduloActivo, setModuloActivo, onCerrarSesion })
   // LÓGICA DE LOGOS DINÁMICOS
   // ==========================================
   const obtenerLogo = () => {
+    // 1. Si es el dueño del sistema, mostramos Tamtara
     if (usuarioData?.rol === 'superadmin') return tamtaraLogo;
-
-    const logosPorCliente = {
-      'AB34K': logoLaExacta, // (Ejemplo del código de La Exacta)
-      'PRU99': logoPrueba,   // 👈 2. Agregas el código 5D del cliente Prueba y su logo
-    };
-
-    return logosPorCliente[usuarioData?.codigo_7d] || null;
-  };
 
     // 2. Diccionario de clientes: Vincula el código 5D con su archivo de imagen
     const logosPorCliente = {
-      'COD5D': logoLaExacta, // ⚠️ REEMPLAZA 'COD5D' por el código real de 5 dígitos de La Exacta (Ej: 'AB34K')
-      // 'OTRO1': logoOtroCliente, // <- Así agregarás más clientes en el futuro
+      'AB34K': logoLaExacta, // Código de La Exacta
+      'PRU99': logoPrueba,   // Código del cliente Prueba
     };
 
-    // 3. Devolvemos el logo si existe, si no, devolvemos null para mostrar el texto por defecto
+    // 3. Devolvemos el logo si existe, si no, devolvemos null
     return logosPorCliente[usuarioData?.codigo_7d] || null;
   };
 
