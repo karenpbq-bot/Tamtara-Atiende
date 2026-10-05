@@ -29,7 +29,28 @@ export default function TerminalPedidos({ idCliente }) {
   const [montoRecibido, setMontoRecibido] = useState('');
 
   useEffect(() => {
-    if (idCliente) cargarProductos();
+    if (idCliente) {
+      cargarProductos();
+      
+      // Auto-cargar pedido si venimos redirigidos desde el Kanban
+      const pedidoGuardado = localStorage.getItem('pedidoAEditar');
+      if (pedidoGuardado) {
+        const pedido = JSON.parse(pedidoGuardado);
+        setPedidoEditandoId(pedido.id);
+        setCodigoExistente(pedido.codigo_exacta);
+        setCliente(pedido.cliente || '');
+        setCarrito(pedido.items || []);
+        
+        const esDelivery = pedido.tipo_entrega?.toLowerCase().includes('delivery');
+        setTipoEntrega(esDelivery ? 'Delivery / Llevar' : 'Mesa / Salón');
+        setDestino(pedido.destino_entrega || '');
+        setTelefono(pedido.telefono_contacto || '');
+        setPasoPedido(1);
+        
+        // Limpiamos la memoria tras cargarlo
+        localStorage.removeItem('pedidoAEditar');
+      }
+    }
   }, [idCliente]);
 
   const cargarProductos = async () => {
