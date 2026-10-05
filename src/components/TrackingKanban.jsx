@@ -127,6 +127,9 @@ export default function TrackingKanban({ idCliente, usuarioData }) {
             colorHeader="#f59e0b" 
             onAvanzar={p => actualizarEstadoPedido(p.id, ESTADOS_BD.LISTO)} 
             onVerDetalle={setPedidoSeleccionado} 
+            onRecuperar={(p) => {
+              alert(`Para agregar o eliminar productos del pedido ${p.codigo_exacta}:\n\n1. Ve a la pestaña lateral "Terminal de Pedidos".\n2. Haz clic en el botón naranja "📝 Recuperar Pedido Pendiente" (arriba a la derecha).\n3. Selecciona el pedido ${p.codigo_exacta} en la lista para editarlo.`);
+            }}
           />
           <ColumnaKanban 
             titulo="🔔 Listo en Barra" 
@@ -228,7 +231,7 @@ export default function TrackingKanban({ idCliente, usuarioData }) {
   );
 }
 
-function ColumnaKanban({ titulo, items, colorHeader, onRetroceder, onAvanzar, onCerrar, onVerDetalle }) {
+function ColumnaKanban({ titulo, items, colorHeader, onRetroceder, onAvanzar, onCerrar, onVerDetalle, onRecuperar }) {
   return (
     <div style={{ background: '#ffffff', borderRadius: '12px', border: '1px solid #e2e8f0', overflow: 'hidden', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
       <div style={{ backgroundColor: colorHeader, color: '#fff', padding: '10px 14px', fontWeight: 'bold', fontSize: '0.9rem', textAlign: 'center' }}>
@@ -266,6 +269,14 @@ function ColumnaKanban({ titulo, items, colorHeader, onRetroceder, onAvanzar, on
                 </div>
 
                 <div style={{ display: 'flex', gap: '4px', marginTop: '8px', borderTop: '1px solid #f1f5f9', paddingTop: '6px' }}>
+                  
+                  {/* NUEVO BOTÓN NARANJA (Solo aparece si el pedido es Pendiente y estamos en "En Cocina") */}
+                  {onRecuperar && esPendiente && (
+                    <button onClick={() => onRecuperar(p)} style={{ background: '#fef3c7', color: '#b45309', border: '1px solid #f59e0b', padding: '4px 8px', borderRadius: '6px', fontSize: '0.7rem', fontWeight: 'bold', cursor: 'pointer' }} title="Modificar pedido en caja">
+                      ⬅️ Editar
+                    </button>
+                  )}
+
                   {onRetroceder && (
                     <button onClick={() => onRetroceder(p)} style={{ background: '#e2e8f0', color: '#334155', border: 'none', padding: '4px 8px', borderRadius: '6px', fontSize: '0.7rem', fontWeight: 'bold', cursor: 'pointer' }} title="Retroceder estado">
                       ⬅️
