@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import tamtaraLogo from '../tamtara.png';
+import logoLaExacta from '../Laexacta.png'; // 👈 Asegúrate de que el archivo se llame exactamente así
 
 const Sidebar = ({ usuarioData, moduloActivo, setModuloActivo, onCerrarSesion }) => {
   
@@ -10,9 +11,24 @@ const Sidebar = ({ usuarioData, moduloActivo, setModuloActivo, onCerrarSesion })
     return () => window.removeEventListener('cambiarModulo', handleCambioModulo);
   }, [setModuloActivo]);
 
-  // Aquí evaluaremos más adelante el logo del cliente según usuarioData.codigo_7d
-  // Por ahora, si es superadmin mostramos Tamtara, de lo contrario un genérico.
-  const logoUrl = usuarioData?.rol === 'superadmin' ? tamtaraLogo : null;
+  // ==========================================
+  // LÓGICA DE LOGOS DINÁMICOS
+  // ==========================================
+  const obtenerLogo = () => {
+    // 1. Si es el dueño del sistema, mostramos Tamtara
+    if (usuarioData?.rol === 'superadmin') return tamtaraLogo;
+
+    // 2. Diccionario de clientes: Vincula el código 5D con su archivo de imagen
+    const logosPorCliente = {
+      'COD5D': logoLaExacta, // ⚠️ REEMPLAZA 'COD5D' por el código real de 5 dígitos de La Exacta (Ej: 'AB34K')
+      // 'OTRO1': logoOtroCliente, // <- Así agregarás más clientes en el futuro
+    };
+
+    // 3. Devolvemos el logo si existe, si no, devolvemos null para mostrar el texto por defecto
+    return logosPorCliente[usuarioData?.codigo_7d] || null;
+  };
+
+  const logoUrl = obtenerLogo();
 
   const menuItems = [
     // Módulo exclusivo para Superadmin
@@ -71,7 +87,8 @@ const Sidebar = ({ usuarioData, moduloActivo, setModuloActivo, onCerrarSesion })
       fontFamily: "'Dancing Script', cursive",
       fontSize: '24px',
       color: '#3d2b56',
-      fontWeight: 'bold'
+      fontWeight: 'bold',
+      textAlign: 'center'
     },
     menuContainer: {
       flex: 1,
