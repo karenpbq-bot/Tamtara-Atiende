@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
-import tamtaraLogo from '../tamtara.png'; // Este se queda con ../ porque está en la carpeta raíz src/
-import logoLaExacta from './Laexacta.png'; // Cambiado a ./ porque está en la misma carpeta components/
-import logoPrueba from './logo-prueba.png'; // Cambiado a ./ porque está en la misma carpeta components/
+import tamtaraLogo from '../tamtara.png';
+import logoLaExacta from './Laexacta.png'; 
+import logoPrueba from './logo-prueba.png';
 
 const Sidebar = ({ usuarioData, moduloActivo, setModuloActivo, onCerrarSesion }) => {
   
@@ -13,20 +13,20 @@ const Sidebar = ({ usuarioData, moduloActivo, setModuloActivo, onCerrarSesion })
   }, [setModuloActivo]);
 
   // ==========================================
-  // LÓGICA DE LOGOS DINÁMICOS
+  // LÓGICA DE LOGOS DINÁMICOS (Opción 1: por ID)
   // ==========================================
   const obtenerLogo = () => {
-    // 1. Si es el dueño del sistema, mostramos Tamtara
+    // 1. Si es el superadmin del sistema principal, mostramos Tamtara
     if (usuarioData?.rol === 'superadmin') return tamtaraLogo;
 
-    // 2. Diccionario de clientes: Vincula el código 5D con su archivo de imagen
+    // 2. Diccionario vinculado por el id_cliente numérico de tu base de datos
     const logosPorCliente = {
-      '0AZPU': logoLaExacta, // Código de La Exacta
-      'ESTJQ': logoPrueba,   // Código del cliente Prueba
+      2: logoLaExacta, // ID 2 = La Exacta (según tu tabla uni_clientes)
+      3: logoPrueba,   // ID 3 = Prueba (según tu tabla uni_clientes)
     };
 
-    // 3. Devolvemos el logo si existe, si no, devolvemos null
-    return logosPorCliente[usuarioData?.codigo_7d] || null;
+    // 3. Devolvemos el logo según el id_cliente del usuario actual, o null por defecto
+    return logosPorCliente[usuarioData?.id_cliente] || null;
   };
 
   const logoUrl = obtenerLogo();
@@ -103,7 +103,7 @@ const Sidebar = ({ usuarioData, moduloActivo, setModuloActivo, onCerrarSesion })
       marginBottom: '8px',
       borderRadius: '8px',
       cursor: 'pointer',
-      backgroundColor: isActive ? '#7c3aed' : 'transparent', // Morado moderno para el activo
+      backgroundColor: isActive ? '#7c3aed' : 'transparent',
       color: isActive ? '#ffffff' : '#6b7280',
       fontWeight: isActive ? '600' : '500',
       transition: 'all 0.2s ease',
@@ -129,7 +129,7 @@ const Sidebar = ({ usuarioData, moduloActivo, setModuloActivo, onCerrarSesion })
     },
     roleBadge: {
       display: 'inline-block',
-      backgroundColor: '#3b82f6', // Azul para el rol
+      backgroundColor: '#3b82f6',
       color: '#ffffff',
       fontSize: '10px',
       fontWeight: 'bold',
@@ -159,8 +159,8 @@ const Sidebar = ({ usuarioData, moduloActivo, setModuloActivo, onCerrarSesion })
       justifyContent: 'center',
       width: '100%',
       padding: '10px',
-      backgroundColor: '#fee2e2', // Fondo rojo claro
-      color: '#ef4444', // Texto rojo
+      backgroundColor: '#fee2e2',
+      color: '#ef4444',
       border: '1px solid #f87171',
       borderRadius: '6px',
       cursor: 'pointer',
