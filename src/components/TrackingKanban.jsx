@@ -128,7 +128,9 @@ export default function TrackingKanban({ idCliente, usuarioData }) {
             onAvanzar={p => actualizarEstadoPedido(p.id, ESTADOS_BD.LISTO)} 
             onVerDetalle={setPedidoSeleccionado} 
             onRecuperar={(p) => {
-              alert(`Para agregar o eliminar productos del pedido ${p.codigo_exacta}:\n\n1. Ve a la pestaña lateral "Terminal de Pedidos".\n2. Haz clic en el botón naranja "📝 Recuperar Pedido Pendiente" (arriba a la derecha).\n3. Selecciona el pedido ${p.codigo_exacta} en la lista para editarlo.`);
+              // Guardamos el pedido en memoria y disparamos el cambio de pantalla automático
+              localStorage.setItem('pedidoAEditar', JSON.stringify(p));
+              window.dispatchEvent(new CustomEvent('cambiarModulo', { detail: 'terminal' }));
             }}
           />
           <ColumnaKanban 
