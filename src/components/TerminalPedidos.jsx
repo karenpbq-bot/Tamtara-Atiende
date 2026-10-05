@@ -11,6 +11,12 @@ export default function TerminalPedidos({ idCliente }) {
   const [pasoPedido, setPasoPedido] = useState(1);
   const [filtroBusqueda, setFiltroBusqueda] = useState('');
 
+  // Estados para recuperar/editar pedidos
+  const [pedidoEditandoId, setPedidoEditandoId] = useState(null);
+  const [codigoExistente, setCodigoExistente] = useState(null);
+  const [mostrarModalPendientes, setMostrarModalPendientes] = useState(false);
+  const [pedidosPendientes, setPedidosPendientes] = useState([]);
+
   // Estados de control para desplegar adicionales por producto
   const [mostrarAdGratis, setMostrarAdGratis] = useState({});
   const [mostrarAdPorcion, setMostrarAdPorcion] = useState({});
@@ -34,6 +40,55 @@ export default function TerminalPedidos({ idCliente }) {
     if (data) setProductos(data);
   };
 
+  // ==========================================
+  // FUNCIONES DE RECUPERACIÓN Y EDICIÓN
+  // ==========================================
+  const cargarPedidosPendientes = async () => {
+    const { data } = await supabase
+      .from('pedidos')
+      .select('id, codigo_exacta, cliente, items, tipo_entrega, destino_entrega, telefono_contacto')
+      .eq('id_cliente', Number(idCliente))
+      .eq('estado_pago', 'Pendiente')
+      .eq('pedido_cerrado', 'No')
+      .order('id', { ascending: false });
+    
+    if (data) {
+      setPedidosPendientes(data);
+      setMostrarModalPendientes(true);
+    }
+  };
+
+  const seleccionarPedidoParaEditar = (pedido) => {
+    setPedidoEditandoId(pedido.id);
+    setCodigoExistente(pedido.codigo_exacta);
+    setCliente(pedido.cliente || '');
+    setCarrito(pedido.items || []);
+    
+    const esDelivery = pedido.tipo_entrega?.toLowerCase().includes('delivery');
+    setTipoEntrega(esDelivery ? 'Delivery / Llevar' : 'Mesa / Salón');
+    setDestino(pedido.destino_entrega || '');
+    setTelefono(pedido.telefono_contacto || '');
+    
+    setPasoPedido(1);
+    setMostrarModalPendientes(false);
+  };
+
+  const limpiarTerminal = () => {
+    setCarrito([]);
+    setCliente('');
+    setDestino('');
+    setTelefono('');
+    setNumOperacion('');
+    setMontoRecibido('');
+    setEsCortesia(false);
+    setPasoPedido(1);
+    setPedidoEditandoId(null);
+    setCodigoExistente(null);
+  };
+
+  // ==========================================
+  // MANEJO DE CARRITO
+  // ==========================================
   const manejarAdicionalChange = (prodId, comp, precio) => {
     setAdicionalesTemp(prev => {
       const current = prev[prodId] || [];
@@ -72,6 +127,9 @@ export default function TerminalPedidos({ idCliente }) {
     }, 0);
   };
 
+  // ==========================================
+  // ENVÍO DE DATOS
+  // ==========================================
   const confirmarCobroYEmitir = async (estadoPago, estadoCocina) => {
     if (carrito.length === 0) return alert('El carrito está vacío');
     if (!esCortesia && ['Yape / Plin', 'Tarjeta'].includes(metodoPago) && !numOperacion.trim()) {
@@ -82,10 +140,14 @@ export default function TerminalPedidos({ idCliente }) {
     const totalCalculado = calcularTotal();
     const montoRec = montoRecibido === '' ? totalCalculado : Number(montoRecibido);
     const vueltoCalc = metodoPago === 'Efectivo' && !esCortesia ? Math.max(0, montoRec - totalCalculado) : 0.0;
-    const codigoTicket = `PED-${Math.floor(100 + Math.random() * 900)}`;
-
-    // Normalización exacta exigida por la base de datos
+    
+    // Si estamos editando, mantenemos el código, si no, creamos uno nuevo.
+    const codigoTicket = pedidoEditandoId ? codigoExistente : `PED-${Math.floor(100 + Math.random() * 900)}`;
     const tipoEntregaNormalizado = tipoEntrega.includes('Delivery') ? 'Delivery' : 'Mesa';
+
+    // 🕒 SOLUCIÓN AL DESFASE DE FECHA: Forzamos la hora exacta de Perú en formato ISO
+    // toLocaleString con sv-SE devuelve "YYYY-MM-DD HH:mm:ss". Reemplazamos el espacio por 'T' para que sea un Timestamp válido
+    const fechaPeruISO = new Date().toLocaleString("sv-SE", { timeZone: "America/Lima" }).replace(" ", "T");
 
     const payload = {
       id_cliente: idCliente,
@@ -106,19 +168,25 @@ export default function TerminalPedidos({ idCliente }) {
       codigo_exacta: codigoTicket
     };
 
-    const { error } = await supabase.from('pedidos').insert([payload]);
-    if (!error) {
-      alert(estadoPago === 'Pagado' ? '🎉 ¡Pedido registrado y cobrado con éxito!' : '🚀 Pedido enviado a cocina con cuenta pendiente.');
-      setCarrito([]);
-      setCliente('');
-      setDestino('');
-      setTelefono('');
-      setNumOperacion('');
-      setMontoRecibido('');
-      setEsCortesia(false);
-      setPasoPedido(1);
+    if (pedidoEditandoId) {
+      // ✏️ ACTUALIZAR EL PEDIDO EXISTENTE
+      const { error } = await supabase.from('pedidos').update(payload).eq('id', pedidoEditandoId);
+      if (!error) {
+        alert(estadoPago === 'Pagado' ? '🎉 ¡Pedido actualizado y cobrado con éxito!' : '🚀 Pedido actualizado (sigue pendiente).');
+        limpiarTerminal();
+      } else {
+        alert('Error al actualizar pedido: ' + error.message);
+      }
     } else {
-      alert('Error al registrar pedido: ' + error.message);
+      // ➕ CREAR PEDIDO NUEVO (Incluimos la fecha de Perú generada arriba)
+      payload.created_at = fechaPeruISO;
+      const { error } = await supabase.from('pedidos').insert([payload]);
+      if (!error) {
+        alert(estadoPago === 'Pagado' ? '🎉 ¡Pedido registrado y cobrado con éxito!' : '🚀 Pedido enviado a cocina con cuenta pendiente.');
+        limpiarTerminal();
+      } else {
+        alert('Error al registrar pedido: ' + error.message);
+      }
     }
   };
 
@@ -135,9 +203,26 @@ export default function TerminalPedidos({ idCliente }) {
 
   return (
     <div style={{ padding: '24px', fontFamily: "'Segoe UI', sans-serif", backgroundColor: '#f8fafc', minHeight: '100vh' }}>
-      <h2 style={{ margin: '0 0 4px 0', fontSize: '1.5rem', color: '#1e293b', fontWeight: 'bold' }}>🛒 Terminal de Pedidos</h2>
-      <p style={{ margin: '0 0 20px 0', fontSize: '0.85rem', color: '#64748b' }}>Caja rápida, selección de adicionales y control de cobros.</p>
       
+      {/* CABECERA Y BOTÓN DE RECUPERAR PEDIDO */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
+        <div>
+          <h2 style={{ margin: '0 0 4px 0', fontSize: '1.5rem', color: '#1e293b', fontWeight: 'bold' }}>🛒 Terminal de Pedidos</h2>
+          <p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b' }}>Caja rápida, selección de adicionales y control de cobros.</p>
+        </div>
+        <button onClick={cargarPedidosPendientes} style={{ background: '#f59e0b', color: '#fff', border: 'none', padding: '10px 16px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 2px 4px rgba(245,158,11,0.2)' }}>
+          📝 Recuperar Pedido Pendiente
+        </button>
+      </div>
+      
+      {/* AVISO DE EDICIÓN ACTIVA */}
+      {pedidoEditandoId && (
+        <div style={{ background: '#fef3c7', border: '1px solid #f59e0b', padding: '12px 16px', borderRadius: '8px', marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ color: '#b45309', fontWeight: 'bold' }}>⚠️ Estás editando el pedido {codigoExistente}. Los cambios actualizarán el registro existente.</span>
+          <button onClick={limpiarTerminal} style={{ background: '#ef4444', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 'bold' }}>✕ Cancelar Edición</button>
+        </div>
+      )}
+
       {/* IDENTIFICACIÓN Y TIPO DE ENTREGA DINÁMICO */}
       <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 1fr 1fr 1.5fr', gap: '12px', marginBottom: '20px', background: '#ffffff', padding: '18px', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
         <div>
@@ -345,14 +430,44 @@ export default function TerminalPedidos({ idCliente }) {
 
           <div style={{ display: 'flex', gap: '15px' }}>
             <button onClick={() => confirmarCobroYEmitir('Pagado', 'En cocina')} style={{ flex: 1, padding: '14px', background: '#10b981', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.95rem' }}>
-              🔥 Confirmar Cobro y Enviar
+              {pedidoEditandoId ? '🔥 Guardar Edición y Cobrar' : '🔥 Confirmar Cobro y Enviar'}
             </button>
             <button onClick={() => confirmarCobroYEmitir('Pendiente', 'En cocina')} style={{ flex: 1, padding: '14px', background: '#f59e0b', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.95rem' }}>
-              ⚡ Enviar a Cocina (Pendiente)
+              {pedidoEditandoId ? '⚡ Guardar Edición (Pendiente)' : '⚡ Enviar a Cocina (Pendiente)'}
             </button>
           </div>
         </div>
       )}
+
+      {/* MODAL DE PEDIDOS PENDIENTES */}
+      {mostrarModalPendientes && (
+        <div style={modalOverlaySt}>
+          <div style={modalContentSt}>
+            <h3 style={{ margin: '0 0 15px 0', color: '#1e293b' }}>Seleccionar Pedido Pendiente</h3>
+            {pedidosPendientes.length === 0 ? (
+              <p style={{ color: '#64748b', fontSize: '0.9rem' }}>No hay pedidos pendientes de pago en este momento.</p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '350px', overflowY: 'auto', paddingRight: '5px' }}>
+                {pedidosPendientes.map(p => (
+                  <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', border: '1px solid #e2e8f0', borderRadius: '8px', background: '#f8fafc' }}>
+                    <div>
+                      <strong style={{ color: '#0f766e', fontSize: '0.95rem' }}>{p.codigo_exacta}</strong> - <span style={{fontWeight: 'bold', color: '#334155'}}>{p.cliente}</span><br/>
+                      <span style={{ fontSize: '0.8rem', color: '#64748b' }}>{p.items?.length || 0} producto(s) | {p.tipo_entrega} {p.destino_entrega ? `(${p.destino_entrega})` : ''}</span>
+                    </div>
+                    <button onClick={() => seleccionarPedidoParaEditar(p)} style={{ background: '#0d9488', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>
+                      Editar
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <button onClick={() => setMostrarModalPendientes(false)} style={{ marginTop: '20px', width: '100%', padding: '12px', background: '#e2e8f0', color: '#334155', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>
+              Cerrar Ventana
+            </button>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
@@ -360,3 +475,5 @@ export default function TerminalPedidos({ idCliente }) {
 const labelSt = { fontSize: '0.8rem', fontWeight: 'bold', display: 'block', marginBottom: '6px', color: '#475569' };
 const inputSt = { width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #cbd5e1', boxSizing: 'border-box', fontSize: '0.9rem', backgroundColor: '#f8fafc', outline: 'none' };
 const btnToggleSt = { background: '#f1f5f9', border: '1px solid #cbd5e1', color: '#0f766e', padding: '5px 10px', borderRadius: '6px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 'bold' };
+const modalOverlaySt = { position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 9999 };
+const modalContentSt = { backgroundColor: '#fff', padding: '25px', borderRadius: '12px', width: '450px', maxWidth: '90%', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)' };
